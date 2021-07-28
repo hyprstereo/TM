@@ -1,5 +1,6 @@
 import * as THREE from "./build/three.module.js";
 import { degToRad } from "./utils/helpers.js";
+import { OrbitControls } from "/js/jsm/controls/OrbitControls.js";
 
 export const isVideo = (src) => {
   return src.endsWith(".webm") || src.endsWith(".mp4") || src.endsWith(".mov");
@@ -75,13 +76,16 @@ const PI_HALF = Math.PI / 2;
  * TODO: dome is redundant now
  */
 export class panoControl extends THREE.EventDispatcher {
-  constructor(dome, config = {}, target, camera, orbit = false) {
+  constructor(dome, config = {}, target, camera, orbit = false, renderer) {
     super();
     this._locked = true;
     this.target =  (target && target.position) ? target.position : new THREE.Vector3();
     this.camera = camera;
     this.isInteracting = false;
     this.orbitMode = orbit;
+    if (this.orbitMode) {
+      this.c = new OrbitControls(camera, renderer.domElement);
+    }
     this.data = {
       lon: 0,
       lat: 0,
@@ -102,6 +106,7 @@ export class panoControl extends THREE.EventDispatcher {
       vector: new THREE.Vector2(),
 
     };
+    if (!orbit) {
     this._euler = new THREE.Euler(0, 0, 0, "YXZ");
     this._listeners = dome || document.body;
 
@@ -144,8 +149,13 @@ export class panoControl extends THREE.EventDispatcher {
     this._listeners.addEventListener("mousedown", this.onPointerDown);
     this._listeners.addEventListener("mousemove", this.onPointerMove);
     this._listeners.addEventListener("mouseup", this.onPointerUp);
-
+  }
     return this;
+  }
+
+  update() {
+    if (this.orbitMode)
+    this.c.update()
   }
 
   destroy() {

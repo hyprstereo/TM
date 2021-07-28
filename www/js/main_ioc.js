@@ -115,14 +115,20 @@ export const render = (ms = 0) => {
     frameId = requestAnimationFrame(render);
   }
   if (controls) {
-    const updated = controls.updated;
-    if (updated) {
-      controls.onRender(clock.getDelta());
-      if (mainComposer) {
-        mainComposer.render();
-      } else {
-        mainRenderer.render(mainScene, mainCamera);
-      }
+    // const updated = controls.updated;
+    // if (updated) {
+    //   controls.onRender(clock.getDelta());
+    //   if (mainComposer) {
+    //     mainComposer.render();
+    //   } else {
+    //     mainRenderer.render(mainScene, mainCamera);
+    //   }
+    // }
+    controls.update()
+    if (mainComposer) {
+      mainComposer.render();
+    } else {
+      mainRenderer.render(mainScene, mainCamera);
     }
 
   }
@@ -172,7 +178,8 @@ export const init = async () => {
     }).then((assets) => {
       fn("Click to start.");
       mainRenderer.shadowMap.needsUpdate = true;
-      controls = setupControls(mainCamera, mainScene, "#overlay");
+
+      controls = setupControls(mainCamera, mainScene, "#overlay", mainRenderer);
       clock.start();
       render(0);
     });

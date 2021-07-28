@@ -1,6 +1,6 @@
 import { isMobile } from "/js/utils/helpers.js";
 import * as THREE from "/js/build/three.module.js";
-import { PointerLockControls } from "/js/jsm/controls/PointerLockControls.js";
+import { OrbitControls } from "/js/jsm/controls/OrbitControls.js";
 import Stats from "/js/build/stats.module.js";
 import { RenderPass } from "/js/jsm/postprocessing/RenderPass.js";
 import { FXAAShader } from "/js/jsm/shaders/FXAAShader.js";
@@ -113,9 +113,9 @@ export const setupScene = async (
   });
 };
 
-export function setupControls(camera, scene, targetEl = "#overlay") {
+export function setupControls(camera, scene, targetEl = "#overlay", renderer = undefined) {
   //const controls = new PointerLockControls(camera, document.body);
-  const controls = new panoControl(null, { dist: 7 }, null, camera, false);
+  const controls = new panoControl(null, { dist: 7 }, null, camera, true, renderer);
   const screen = document.querySelector(targetEl);
   controls.addEventListener("lock", function () {
     anime({
