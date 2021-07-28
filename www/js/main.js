@@ -338,7 +338,7 @@ document.body.onload = async (evt) => {
 
   if (tomi) {
     mainScene.environment = dome.media;
-    videoPano = new panoControl(dome, { dist: 60 }, tomi, mainCamera);
+    videoPano = new panoControl(dome, { dist: 60 }, tomi, mainCamera), true, mainRenderer;
     document.addEventListener("keydown", (e) => {
       console.log(e);
       switch (e.key) {
