@@ -153,14 +153,15 @@ const setupScreens = (tablesSet) => {
   const screen2 = screen.clone();
 
   const lt = new THREE.TextureLoader();
-  lt.load('../../ui/ioc/screen/A15.png', (t) =>{
+  lt.load('../../ui/ioc/screen/a15.png', (t) =>{
+    t.flipY = false;
     screen2.map = t;
   })
-  lt.load("../../ui/ioc/screen/VMS.jpg", (texture) => {
+  lt.load("../../ui/ioc/screen/A12.png", (texture) => {
+    texture.flipY = false;
     screen.map = texture;
     let counter = 0;
     tablesSet.traverse((node) => {
-      console.log(node);
 
       if (node.type === "Mesh") {
         // if (node.name.startsWith("table_geo_00000") && node.material.name.startsWith('chair_table_mat')) {
@@ -174,10 +175,10 @@ const setupScreens = (tablesSet) => {
         //   node.material = tmat;
 
         //   node.castShadow = node.receiveShadow = true;
-        if (node.name.startsWith("dust")) {
+        if (node.name.startsWith("dus")) {
           node.material.side = THREE.DoubleSide;
         } else if (node.material.name.startsWith("screen_monitor")) {
-          node.material = (counter % 2 == 2) ? screen.clone() : screen2.clone();
+          node.material = (counter % 2 == 0) ? screen : screen2;
         } else if (node.name.startsWith("keyboard")) {
           if (!keyboard.map) {
             keyboard.map = node.material.map;

@@ -115,7 +115,7 @@ export const setupScene = async (
 
 export function setupControls(camera, scene, targetEl = "#overlay") {
   //const controls = new PointerLockControls(camera, document.body);
-  const controls = new panoControl(null, { dist: 7 }, null, camera);
+  const controls = new panoControl(null, { dist: 7 }, null, camera, false);
   const screen = document.querySelector(targetEl);
   controls.addEventListener("lock", function () {
     anime({

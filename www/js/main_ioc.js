@@ -25,8 +25,9 @@ let controls;
 
 export const createLoadScreen = () => {
   loadScreen = document.querySelector("#overlay");
+  const prog = loadScreen.querySelector('.prog');
   const updateScreen = (msg) => {
-    loadScreen.innerHTML = `<span>${msg}</span>`;
+    prog.innerHTML = `<span>${msg}</span>`;
   };
   return { screen: loadScreen, fn: updateScreen };
 };
