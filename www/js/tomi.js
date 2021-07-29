@@ -206,7 +206,6 @@ export class TomiModel {
         self._faceLoaded = true;
         self.texture = texture;
         self.faceIndex("talk");
-
         const faceMat = new THREE.MeshLambertMaterial({
           map: self.texture,
          color: 0x00eeff,
@@ -214,7 +213,8 @@ export class TomiModel {
         mf.material = faceMat;
         // mf.material.map = self.texture;
         // mf.material.metalness = 0.4;
-
+        // mf.material.roughness = 0.7;
+        // mf.material.emissiveIntensity = 1.8;
         // mf.material.flatShading =
       })
       .catch((e) => console.warn(e));

@@ -1,6 +1,9 @@
 import { isMobile } from "/js/utils/helpers.js";
 import * as THREE from "/js/build/three.module.js";
 import { OrbitControls } from "/js/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
+import { FBXLoader } from "/js/jsm/loaders/FBXLoader.js";
+// import { ObjectLoader } from "/js/jsm/loaders/ObjectLoader.js";
 import Stats from "/js/build/stats.module.js";
 import { RenderPass } from "/js/jsm/postprocessing/RenderPass.js";
 import { FXAAShader } from "/js/jsm/shaders/FXAAShader.js";
@@ -35,7 +38,7 @@ export class SceneManager extends Emitter {
     this._isNew = true;
     this._isLoading = false;
     this._isBusy = false;
-    this.speech = new TTS({ voice: 0, pitch: 1.001 });
+    this.speech = new TTS({voice: 0, pitch: 1.001});
     this._layers = {
       lights: 2,
       meshes: 1,
@@ -110,50 +113,13 @@ export class SceneManager extends Emitter {
     }
   }
 
-  createLightProbe(scene, renderer) {
-    // probe
-    const lightProbe = new THREE.LightProbe();
-    scene.add(lightProbe);
 
-    const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
-      encoding: THREE.sRGBEncoding, // since gamma is applied during rendering, the cubeCamera renderTarget texture encoding must be sRGBEncoding
-      format: THREE.RGBAFormat,
-    });
-
-    const cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
-
-    //const urls = genCubeUrls( 'ç', '.png' );
-    const urls = [
-      "/models/texture/e.jpg",
-      "/models/texture/e.jpg",
-      "/models/texture/e.jpg",
-      "/models/texture/e.jpg",
-    ];
-
-    new THREE.CubeTextureLoader().load(urls, function (cubeTexture) {
-      cubeTexture.encoding = THREE.sRGBEncoding;
-
-      scene.background = cubeTexture;
-
-      cubeCamera.update(renderer, scene);
-
-      lightProbe.copy(
-        LightProbeGenerator.fromCubeRenderTarget(renderer, cubeRenderTarget)
-      );
-
-      scene.add(new LightProbeHelper(lightProbe, 5));
-
-      //LightProbeGenerator.fromCubeTexture(cubeTexture);
-    });
-  }
 
   createHelper(mesh, helperType = undefined) {
     if (mesh.type === "Mesh") {
       if (!mesh.helper) {
         const box = new THREE.Box3().setFromObject(mesh);
-        const bhelper = helperType
-          ? new helperType(mesh)
-          : new THREE.Box3Helper(box, 0xffff00);
+        const bhelper = (helperType) ? new helperType(mesh) : new THREE.Box3Helper(box, 0xffff00);
         bhelper.layers.set(this._layers.helpers);
         //mesh.layers.set(this._layers.meshes);
         mesh.add(bhelper);
@@ -355,9 +321,21 @@ export const setupScene = async (
   });
 };
 
-export function setupControls(camera, scene, targetEl = "#overlay", renderer = undefined) {
+export function setupControls(
+  camera,
+  scene,
+  targetEl = "#overlay",
+  renderer = undefined
+) {
   //const controls = new PointerLockControls(camera, document.body);
-  const controls = new panoControl(null, { dist: 7 }, null, camera, true, renderer);
+  const controls = new panoControl(
+    null,
+    { dist: 7 },
+    null,
+    camera,
+    true,
+    renderer
+  );
   const screen = document.querySelector(targetEl);
   controls.addEventListener("lock", function () {
     anime({
@@ -367,7 +345,6 @@ export function setupControls(camera, scene, targetEl = "#overlay", renderer = u
       easing: "easeOutSine",
       complete: () => {
         screen.style.display = "none";
-
       },
     });
   });
@@ -387,7 +364,6 @@ export function setupControls(camera, scene, targetEl = "#overlay", renderer = u
     });
   });
 
-  document.body.onclick = () => controls.lock();
   return controls;
 }
 
@@ -413,7 +389,6 @@ export const postEffects = (
   const target = renderTarget || renderer;
 
   const composer = new EffectComposer(target);
-
 
   if (SETTINGS.ao && !isMobile()) {
     const sao = new SAOPass(scene, camera, false, true);
