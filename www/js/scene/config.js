@@ -11,6 +11,7 @@ import { EffectComposer } from "/js/jsm/postprocessing/EffectComposer.js";
 import { SAOPass } from "/js/jsm/postprocessing/SAOPass.js";
 import { BloomFragment, BloomShader } from "/js/scene/ioc.js";
 import { panoControl } from "../pano.js";
+import { Tween } from "./tweenutils.js";
 
 export const SETTINGS = {
   physicallyCorrectLights: true,
@@ -24,6 +25,7 @@ export const SETTINGS = {
   encoding: THREE.sRGBEncoding,
   precision: "highp",
   useExportedAssets: true,
+  gamma: 2.2,
 };
 
 export const setupScene = async (
@@ -71,11 +73,9 @@ export const setupScene = async (
     });
     renderer.setClearColor(0x0000000, 1);
     renderer.toneMapping = isMobile() ? THREE.NoToneMapping : SETTINGS.tone;
-    renderer.outputEncoding = isMobile()
-      ? THREE.LinearEncoding
-      : SETTINGS.encoding;
-    renderer.physicallyCorrectLights = !isMobile();
-    renderer.gammaFactor = 2.2;
+    renderer.outputEncoding = SETTINGS.encoding;
+    renderer.physicallyCorrectLights = SETTINGS.physicallyCorrectLights;
+    renderer.gammaFactor = SETTINGS.gamma;
     renderer.setSize(config.width, config.height);
     if (config.shadow) {
       renderer.shadowMap.enabled = true;
