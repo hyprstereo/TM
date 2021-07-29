@@ -1,7 +1,7 @@
 import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
 import * as THREE from "/js/build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
-import { SceneManager, SETTINGS } from "../scene/config.js";
+import { SETTINGS } from "../scene/config.js";
 import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
@@ -9,7 +9,6 @@ import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
 export const Assets = [
   "/models/ioc/building2.glb",
   "/models/ioc/tables.glb",
-  "/models/tomi-anim.glb",
   "/models/ioc/table_set.glb",
 ];
 const props = [
@@ -45,19 +44,20 @@ export const LoadAssets = async (
     let counter = 0;
 
     const files = SETTINGS.useExportedAssets
-      ? [Assets[0], Assets[1], Assets[2]]
-      : [Assets[0], Assets[2], Assets[3]];
+      ? [Assets[0], Assets[1]]
+      : [Assets[0], Assets[2]];
 
     files.forEach((file, i) => {
       const name = getName(file);
       loader.load(
         file,
         (asset) => {
-          let model = asset.scene || asset;
+          const model = asset.scene || asset;
 
           if (name == "nulls") {
             tablePositions = getPositions(model.children[0], scene);
           } else {
+            // console.log("loaded", name, model);
             if (model) {
               if (name.startsWith("table_set") && !SETTINGS.useExportedAssets) {
                 setupTables(model, scene, false);
@@ -68,38 +68,20 @@ export const LoadAssets = async (
                 if (name.startsWith("table")) {
                   setupScreens(model);
                   //fixMaterials(model);
-                } else if (name.startsWith("tomi")) {
-                  const ts = new THREE.Box3().setFromObject(model)
-                  //const si = ts.getSize(new THREE.Vector3());
-                  const bg = new THREE.Object3D()
-
-                  //bg.rotation.y = degToRad(180);
-                  model.add(bg);
-                  bg.position.set(0, 0, 0)
-                  //bg.rotation.y = degToRad(180)
-                  model.traverse(m => {
-                    if (m.type === 'Bone') {
-
-
-
-
-                      //s.rotation.copy(m.rotation)
-                      //m.scale.set(1,1,1)
-                      //m.root.rotation.y = degToRad(180);
-                      const s = new THREE.SkeletonHelper(m);
-                      s.layers.set(SceneManager.instance._layers.helpers);
-                      s.position.copy(m.position);
-                      scene.add(s);
-                    }
-                  })
-                  //bg.scale.set(1.8, 1.8, 1.8)
-                  //const scale = 0.28;
-                  //model.scale.set(scale, scale, scale);
-                } else  {
-                  SceneManager.instance.createHelper(model);
+                } else {
+                  // model.traverse(node=> {
+                  //   if (node.type === 'Mesh' && (!node.name.startsWith('keyboard') || !node.name.startsWith('screen') )) {
+                  //     node.material.polygonOffset = true;
+                  //     node.material.polygonOffsetFactor = -0.1;
+                  //     node.material.needsUpdating = true;
+                  //     node.material.side = THREE.DoubleSide;
+                  //   } else if (node.type === 'Material') {
+                  //     if(node.map) node.map.filter = THREE.LinearMipmapLinearFilter;
+                  //   }
+                  // })
+                  //ExportToGLTF('building.gltf', model);
                 }
               }
-              assets.push(model);
             }
           }
           counter++;
@@ -123,17 +105,18 @@ export const LoadAssets = async (
 };
 
 export const loadFrame = (url) => {
-  const iframe = document.createElement("iframe");
+  const iframe = document.createElement('iframe');
   iframe.style.width = `100%`;
   iframe.style.height = `100%`;
   iframe.src = url;
   return iframe;
-};
+}
 
-export const createCSSElement = (el, scene, target) => {
+export const createCSSElement = (el, scene, target)=>{
   const cr = new CSS3DRenderer();
   const obj = new CSS3DObject(el);
-};
+
+}
 
 const setupTables = (model, scene, exportFile = false) => {
   fixMaterials(model);
@@ -170,15 +153,16 @@ const setupScreens = (tablesSet) => {
   const screen2 = screen.clone();
 
   const lt = new THREE.TextureLoader();
-  lt.load("../../ui/ioc/screen/a15.png", (t) => {
+  lt.load('../../ui/ioc/screen/a15.png', (t) =>{
     t.flipY = false;
     screen2.map = t;
-  });
+  })
   lt.load("../../ui/ioc/screen/A12.png", (texture) => {
     texture.flipY = false;
     screen.map = texture;
     let counter = 0;
     tablesSet.traverse((node) => {
+
       if (node.type === "Mesh") {
         // if (node.name.startsWith("table_geo_00000") && node.material.name.startsWith('chair_table_mat')) {
         //   if (!tmat) {
@@ -191,22 +175,20 @@ const setupScreens = (tablesSet) => {
         //   node.material = tmat;
 
         //   node.castShadow = node.receiveShadow = true;
-
         if (node.name.startsWith("dus")) {
           node.material.side = THREE.DoubleSide;
         } else if (node.material.name.startsWith("screen_monitor")) {
-          node.material = counter % 2 == 0 ? screen : screen2;
+          node.material = (counter % 2 == 0) ? screen : screen2;
         } else if (node.name.startsWith("keyboard")) {
           if (!keyboard.map) {
             keyboard.map = node.material.map;
             keyboard.alphaMap = node.material.alphaMap;
           }
           node.material = keyboard;
-        } else {
-          if (node.name.startsWith('table_geo')) SceneManager.instance.createHelper(node);
         }
         //node.map.needsUpdate = true;
         node.castShadow = node.receiveShadow = true;
+      } else {
       }
       counter++;
     });

@@ -3,7 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
-    <link rel="stylesheet" href="/css/style.css" />
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Comfortaa:400,700,300);
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        font-family: "Comfortaa", "Open-Sans";
+      }
+
+      svg {
+        width: 100px;
+        height: 100px;
+        margin: 20px;
+        display: inline-block;
+      }
+
+      #overlay {
+        pointer-events: none;
+        position: absolute;
+        display: inline-flex;
+        justify-content: space-around;
+        align-items: center;
+        color: #fff;
+        background: #000;
+        top: 0;
+        margin: 0 auto;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10000;
+      }
+
+      .app-container {
+        display: block;
+
+        width: 100% !important;
+        height: 100vh !important;
+        margin: 0;
+        padding: 0;
+        background: #888888;
+      }
+
+      .app-container canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TM ONE EXR 1.5</title>
   </head>
@@ -59,10 +112,11 @@
     </div>
     <div id="app" class="app-container"></div>
   </body>
-<script src="https://code.createjs.com/1.0.0/tweenjs.min.js"></script>
   <script src="./js/build/anime.min.js"></script>
   <script src="./js/build/lodash.min.js"></script>
-  <script src="./js/utils/humanize.js"> </script>
-      <script src="./js/build/howler.min.js"> </script>
+  <script src="./js/utils/humanize.js">
+    </script
+      <script src="./js/build/howler.min.js">
+  </script>
   <script type="module" src="./js/main_ioc.js"></script>
 </html>

@@ -1,4 +1,4 @@
-import * as _THREE from './three.module.js';
+import * as _THREE from 'three';
 import { THREESubset, ACTION, PointerInput, MouseButtons, Touches, FitToOptions, CameraControlsEventMap } from './types';
 import { EventDispatcher } from './EventDispatcher';
 export declare class CameraControls extends EventDispatcher {

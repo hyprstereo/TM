@@ -1,7 +1,7 @@
 import { degToRad } from "./utils/helpers.js";
 import * as THREE from "/js/build/three.module.js";
 import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
-import { TWEEN } from "./jsm/libs/tween.module.min.js";
+
 const eyes = {
   left: {
     default: [
@@ -74,14 +74,14 @@ const audioSources = [
 const faceActions = {
   idle: { x: 0, y: 2 },
   smile: { x: 3, y: 2 },
-  curious: { x: 0, y: 1 },
+  curious: { x: 0, y:   1  },
   talk: { x: 0, y: 0 },
   talk2: { x: 1, y: 3 },
   joy: { x: 1, y: 2 },
   dead: { x: 1, y: 1 },
   angry: { x: 1, y: 0 },
   sad: { x: 2, y: 2 },
-  duh: { x: 2, y: 1 },
+  duh: { x: 2, y:1 },
   annoyed: { x: 2, y: 0 },
   happy: { x: 1, y: 2 },
   error: { x: 3, y: 1 },
@@ -146,28 +146,19 @@ export const path2Points = (path) => {
   return points;
 };
 
-export class TomiModel extends THREE.Object3D {
+export class TomiModel {
   constructor(
     target,
     targetFace = "#tomi-face",
     scene = undefined,
     voices = undefined,
     row = 4,
-    col = 4,
-    cam = undefined
+    col = 4
   ) {
-    super();
     if (!voices) voices = audioSources;
-    this._cam = cam;
-    this.add(target);
-    this.model = target.children[0];
-    this._root = target.getObjectByName("Root");
-    console.log(this.model, this._root);
-    this.startiingY = this.position.y = 1;
-    scene.add(this);
+    this.model = target.getObjectByName("bot");
     this.face = document.querySelector(targetFace);
-    this.target = new THREE.AxesHelper(0.2);
-    scene.add(this.target);
+
     this._row = row;
     this._col = col;
     this.animInstance = {};
@@ -180,18 +171,13 @@ export class TomiModel extends THREE.Object3D {
     this._dest = 0;
     this._cur = 0;
     this._talking = false;
-    this._armL = this._root.children[0].getObjectByName('ArmL');
-    this._armR = this._root.children[0].getObjectByName('ArmR');
+
     this._faceLoaded = false;
     this._voices = voices;
     this._voice;
     this._analyzerTM;
-    this.prop = { x: 0, y: 0, z: 0 , h: 1};
-    this.tween = new TWEEN.Tween(this.prop, 800).onUpdate(function () {
-      this._root.position.y = this.prop.z;
-    });
 
-    const mf = this.model.getObjectByName("face");
+    const mf = this.model.children[0].getObjectByName("shield");
 
 
 
@@ -203,7 +189,7 @@ export class TomiModel extends THREE.Object3D {
       this._clips = scene.animations;
     }
 
-    console.log(this.model);
+    console.log(this.model)
     const self = this;
     // const shield = this.model.children[0].getObjectByName('shield');
     // new THREE.TextureLoader().load('/models/shield.jpg', (t) =>{
@@ -218,6 +204,7 @@ export class TomiModel extends THREE.Object3D {
         self._faceLoaded = true;
         self.texture = texture;
         self.faceIndex("talk");
+<<<<<<< HEAD
         const faceMat = new THREE.MeshLambertMaterial({
           map: self.texture,
           emmissive: 0x00eeff,
@@ -227,6 +214,13 @@ export class TomiModel extends THREE.Object3D {
         // mf.material.metalness = 0.4;
         // mf.material.roughness = 0.7;
         // mf.material.emissiveIntensity = 1.8;
+=======
+
+        mf.material.map = self.texture;
+        mf.material.metalness = 0.4;
+        mf.material.roughness = 0.7;
+       // mf.material.emissiveIntensity = 1.8;
+>>>>>>> parent of 18dee6c... tomi
         // mf.material.flatShading =
       })
       .catch((e) => console.warn(e));
@@ -255,81 +249,40 @@ export class TomiModel extends THREE.Object3D {
     analyser.getByteTimeDomainData(dataArray);
     const self = this;
     let mouth = 0;
-
-    const annalyze = (idle = false) => {
+    this._analyzerTM = setInterval((_) => {
       analyser.getByteTimeDomainData(dataArray);
-      // console.log(dataArray[0], dataArray[511], dataArray[1023]);
-      let p = {};
-      let Y = 0;
-      if (!idle) {
-        p.y = (128 - dataArray[0]) * 0.01;
-        p.x = (128 - dataArray[1023]) * -0.01;
-        p.z = (128 - dataArray[511]) * 0.01;
-        p.h = 0;
-        const to = { x: this._cur, y: this._dest, z: this.rot };
-        Y = dataArray[511];
-        if (Y != 128 && Y < 129) {
-          self.faceIndex(mouth % 1 == 0 ? "talk2" : "talk");
-          mouth++;
-        } else if (Y >= 129) {
-          self.faceIndex("happy");
-        } else if (Y == 128) {
-          self.faceIndex("smile");
-        } else {
-          self.faceIndex("talk2");
-        }
+      console.log(dataArray[0], dataArray[511], dataArray[1023]);
+      this._cur = (128 - dataArray[0]) * 0.025;
+      this._rot = (128 - dataArray[1023]) * -0.045;
+      this._dest = (128 - dataArray[511]) * 1;
+      const Y = dataArray[511];
+      if (Y != 128 && Y < 129) {
+        self.faceIndex((mouth % 1 == 0) ? 'talk2': "talk");
+        mouth ++;
+      } else if (Y >= 129) {
+        self.faceIndex("happy");
+      } else if (Y == 128) {
+        self.faceIndex("smile");
       } else {
-        p = { x: 0, y: 0, z: 1.1 , h: 0};
+        self.faceIndex("talk2");
       }
-      createjs.Tween.get(this.prop, {
-        onChange: () => {
-          this.model.position.y = this.prop.z;
-          this.model.rotation.z = this.prop.y;
-          this.model.rotation.x = this.prop.x;
-          this._armL.rotation.y = .8 - (this.prop.x * 2.6);
-          this._armR.rotation.y = -0.8 - (this.prop.x * -2.6);
-          //this._armL.rotation.z = this.prop.y;
-        },
-        onComplete: () => {
-          annalyze();
-        },
-      }).to(p, 100 + Y, createjs.Ease.sineOut);
-    };
-    // new TWEEN.Tween(this.model.position.y, 1000).to(this._dest);
+      anime({
+        targets: self.model.position,
+        y: this._dest,
 
-    annalyze();
+        duration: 500,
+        easing: "linear",
+      });
+      anime({
+        targets: self.model.rotation,
+        y: this._cur,
+        x: this._rot,
+        duration: 250,
+        easing: "linear",
+      });
+    }, 500);
+    console.log(analyser);
     this._analyzer = analyser;
-  }
-
-  idle() {
-    const self = this;
-    let p = { x: 0, y: 0, z: -0.2 , h: 1}
-    createjs.Tween.get(this.prop, {
-      loop: true,
-      bounce: true,
-      override: true,
-      onChange: () => {
-        self.model.position.y = self.prop.z;
-        self.model.rotation.z = self.prop.y;
-        self.model.rotation.x = self.prop.x;
-        this._armL.rotation.y = .3 - (this.prop.z * 1.6);
-        this._armR.rotation.y = -0.3 - (this.prop.z * -1.6);
-        this._armL.rotation.x = -this.prop.h;
-        this._armR.rotation.x = this.prop.h;
-      },
-      onComplete:()=>{
-        p.z = 0.2
-      },
-    }).to(p, 1000, createjs.Ease.sineInOut);
-    createjs.Tween.get(this.prop, {
-      loop: true,
-      bounce: true,
-      onChange: () => {
-
-        this._armL.rotation.x = -1.5;
-        this._armR.rotation.x = -1.5;
-      },
-    }).to(p, 1000, createjs.Ease.sineInOut);
   }
 
   play() {
@@ -366,11 +319,6 @@ export class TomiModel extends THREE.Object3D {
     if (this._mixer) {
       this._mixer.update(this._clock.getDelta());
     }
-    //this._root.rotation.z += .001;
-    // if (this.target) {
-    //   this.target.lookAt(this._cam.position);
-    // }
-    //this.model.position.y = this.prop.z;
   }
 
   async playVoice(src, vol = 0.1) {
@@ -394,7 +342,14 @@ export class TomiModel extends THREE.Object3D {
             self._talking = false;
             clearInterval(self._analyzerTM);
             self._analyzerTM = null;
-            self.idle()
+            anime({
+              targets: self.model.position,
+              y: [0, 5],
+              loop: true,
+              direction: "alternate",
+              easing: "linear",
+              duration: 1800,
+            });
           });
           this._voice.on("loaderror", function (e) {
             rej(e);
@@ -404,14 +359,6 @@ export class TomiModel extends THREE.Object3D {
         }
       }
     });
-  }
-
-  smoothLookAt(target, delay = 0) {
-    this.target.lookAt(target);
-    let rot = this.target.rotation.clone();
-    const self = this;
-    let from = self.rotation.y;
-    createjs.Tween.get(self.model.rotation, {override: true}).to(rot, 800, createjs.Ease.sineOut);
   }
 
   faceIndex(actions) {
@@ -424,7 +371,7 @@ export class TomiModel extends THREE.Object3D {
     texture.repeat.x = 1 / this._col;
     texture.repeat.y = 1 / this._row;
     texture.offset.x = actions.x / this._col;
-    texture.offset.y = actions.y / this._row + 0.05;
+    texture.offset.y = (actions.y / this._row) + 0.05;
   }
 
   render(fps = 0) {
@@ -546,7 +493,7 @@ export class TomiModel extends THREE.Object3D {
 
 export const SpriteTexture = async (target, src) => {
   const texture = await new THREE.TextureLoader().load(src);
-  texture.flipY = false;
+  texture.flipY =false
   return texture;
 };
 
