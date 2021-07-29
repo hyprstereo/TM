@@ -1,4 +1,4 @@
-import * as _THREE from 'three';
+import * as _THREE from './three.module.js';
 export interface THREESubset {
     MOUSE: typeof _THREE.MOUSE;
     Vector2: typeof _THREE.Vector2;

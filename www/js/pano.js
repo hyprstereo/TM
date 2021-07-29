@@ -79,7 +79,8 @@ export class panoControl extends THREE.EventDispatcher {
   constructor(dome, config = {}, target, camera, orbit = false, renderer) {
     super();
     this._locked = true;
-    this.target =  (target && target.position) ? target.position : new THREE.Vector3();
+    this.target =
+      target && target.position ? target.position : new THREE.Vector3();
     this.camera = camera;
     this.isInteracting = false;
     this.orbitMode = orbit;
@@ -104,64 +105,86 @@ export class panoControl extends THREE.EventDispatcher {
       onPointerLon: 0,
       onPointerLat: 0,
       vector: new THREE.Vector2(),
-
     };
     if (!orbit) {
-    this._euler = new THREE.Euler(0, 0, 0, "YXZ");
-    this._listeners = dome || document.body;
-
-    this.needsUpdating = true;
-    const self = this;
-
-    this.onPointerDown = (evt) => {
-      self.isInteracting = true;
-      self.event.onPointerX = evt.clientX;
-      self.event.onPointerY = evt.clientY;
-      self.event.onPointerLon = self.data.lon;
-      self.event.onPointerLat = self.data.lat;
-      self.needsUpdating = true;
-    };
-
-    this.onPointerMove = (evt) => {
-      if (self.isInteracting) {
-        self.data.lon =
-          (self.event.onPointerX - evt.clientX) * 0.1 + self.event.onPointerLon;
-        self.data.lat =
-          (self.event.onPointerY - evt.clientY) * 0.1 + self.event.onPointerLat;
-        if (!self.orbitMode) {
-          const movementY = evt.movementX || evt.mozMovementX || evt.webkitMovementX || 0;
-          const movementX = evt.movementY || evt.mozMovementY || evt.webkitMovementY || 0;
-          self.event.vector.x = movementX;
-          self.event.vector.y = movementY;
-        }
-      }
-    };
-
-    this.onPointerUp = (evt) => {
-
-      self.isInteracting = false;
-      self.event.vector.x = self.event.y = 0;
-    };
-
-    this._listeners.addEventListener("pointerdown", this.onPointerDown);
-    this._listeners.addEventListener("pointermove", this.onPointerMove);
-    this._listeners.addEventListener("pointerup", this.onPointerUp);
-    this._listeners.addEventListener("mousedown", this.onPointerDown);
-    this._listeners.addEventListener("mousemove", this.onPointerMove);
-    this._listeners.addEventListener("mouseup", this.onPointerUp);
-  }
+    }
+    this._target = orbit ? this.c.target : new THREE.Vector3();
     return this;
   }
 
+  set target(v) {
+    this._target = v;
+    if (this.orbitMode) this.c.target = v;
+  }
+  get target() {
+    return this._target;
+  }
+
   update() {
-    if (this.orbitMode)
-    this.c.update()
+    if (this.orbitMode) this.c.update();
   }
 
   destroy() {
     this._listeners.removeEventListener("pointerdown", this.onPointerDown);
     this._listeners.removeEventListener("pointermove", this.onPointerMove);
     this._listeners.removeEventListener("pointerup", this.onPointerUp);
+  }
+
+  changeMode(mode) {
+    this.orbitMode = mode == "orbit";
+    if (!this.orbitMode) {
+      this._euler = new THREE.Euler(0, 0, 0, "YXZ");
+      this._listeners = dome || document.body;
+
+      this.needsUpdating = true;
+      const self = this;
+
+      this.onPointerDown = (evt) => {};
+
+      this.onPointerMove = (evt) => {};
+
+      this.onPointerUp = (evt) => {};
+
+      this._listeners.addEventListener("pointerdown", this.onPointerDown);
+      this._listeners.addEventListener("pointermove", this.onPointerMove);
+      this._listeners.addEventListener("pointerup", this.onPointerUp);
+      this._listeners.addEventListener("mousedown", this.onPointerDown);
+      this._listeners.addEventListener("mousemove", this.onPointerMove);
+      this._listeners.addEventListener("mouseup", this.onPointerUp);
+    }
+  }
+
+  __onPointerDown(evt) {
+    const self = this;
+    self.isInteracting = true;
+    self.event.onPointerX = evt.clientX;
+    self.event.onPointerY = evt.clientY;
+    self.event.onPointerLon = self.data.lon;
+    self.event.onPointerLat = self.data.lat;
+    self.needsUpdating = true;
+  }
+
+  __onPointerMove(evt) {
+    const self = this;
+    if (self.isInteracting) {
+      self.data.lon =
+        (self.event.onPointerX - evt.clientX) * 0.1 + self.event.onPointerLon;
+      self.data.lat =
+        (self.event.onPointerY - evt.clientY) * 0.1 + self.event.onPointerLat;
+      if (!self.orbitMode) {
+        const movementY =
+          evt.movementX || evt.mozMovementX || evt.webkitMovementX || 0;
+        const movementX =
+          evt.movementY || evt.mozMovementY || evt.webkitMovementY || 0;
+        self.event.vector.x = movementX;
+        self.event.vector.y = movementY;
+      }
+    }
+  }
+
+  __onPointerUp(evt) {
+    self.isInteracting = false;
+    self.event.vector.x = self.event.y = 0;
   }
 
   get updated() {
@@ -229,6 +252,11 @@ export class panoControl extends THREE.EventDispatcher {
       }
       this.needsUpdating = false;
     }
+  }
+
+  moveTo(target) {
+    let position =
+      target instanceof THREE.Object3D ? target.position.clone() : target;
   }
 }
 

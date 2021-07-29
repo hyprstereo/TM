@@ -1,0 +1,13 @@
+{
+  "models": {
+    "building": "/models/ioc/building.glb",
+    "tables": "/models/ioc/tables.glb"
+  },
+  "textures": {
+    "screens": [
+      "/ui/ioc/screen/A12.png",
+      "/ui/ioc/screen/a15.png"
+    ]
+  }
+
+}
