@@ -6,6 +6,17 @@ import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
 
+// function rl(scene, tablesSet) {
+//   const b = new THREE.Box3().setFromObject(tablesSet);
+//   const s = b.getSize(tablesSet.position);
+//   const width = s.x;
+//   const height = s.z;
+//   const intensity = 1;
+//   const rectLight = new THREE.RectAreaLight(0xffffff, intensity, width, height);
+//   rectLight.position.set(0, 4, 0);
+//   rectLight.lookAt(0, 0, 0);
+//   scene.add(rectLight);
+// }
 export const Assets = [
   "/models/ioc/building2.glb",
   "/models/ioc/tables.glb",
@@ -42,6 +53,8 @@ export const LoadAssets = async (
     let assets = [];
     let tablePositions = [];
     let counter = 0;
+    let blue;
+    let shd;
 
     const files = SETTINGS.useExportedAssets
       ? [Assets[0], Assets[1]]
@@ -66,20 +79,67 @@ export const LoadAssets = async (
                 model.name = name;
                 scene.add(model);
                 if (name.startsWith("table")) {
-                  setupScreens(model);
+                  setupScreens(model, scene);
                   //fixMaterials(model);
+                } else if (name.startsWith("tomi")) {
+                  const ts = new THREE.Box3().setFromObject(model);
+                  //const si = ts.getSize(new THREE.Vector3());
+                  const bg = new THREE.Object3D();
+
+                  //bg.rotation.y = degToRad(180);
+                  model.add(bg);
+                  bg.position.set(0, 0, 0);
+                  //bg.rotation.y = degToRad(180)
+                  model.traverse((m) => {
+                    if (m.type === "Bone") {
+                      //s.rotation.copy(m.rotation)
+                      //m.scale.set(1,1,1)
+                      //m.root.rotation.y = degToRad(180);
+                      const s = new THREE.SkeletonHelper(m);
+                      s.layers.set(SceneManager.instance._layers.helpers);
+                      s.position.copy(m.position);
+                      scene.add(s);
+                    } else if (
+                      m.type === "Mesh" &&
+                      (m.name.startsWith("body_28") ||
+                        m.name.startsWith("mesh35_"))
+                    ) {
+                      if (!blue) {
+                        blue = new THREE.MeshLambertMaterial({
+                          map: m.material.map || null,
+                          color: m.material.color || 0xffffff,
+                          alphaMap: m.material.alphaMap,
+                          transparent: true,
+                          // emissive: 0xffffff,
+                          // emissiveIntensity: 1.6,
+                          color: 0xff0000,
+                        });
+                      }
+                      m.material = blue.clone();
+                      const pl = new THREE.PointLight(0x00eeff, 0.1);
+                      m.add(pl);
+                    } else {
+                      if (
+                        m.material &&
+                        m.material.name.startsWith("white_shd")
+                      ) {
+                        console.log(m.material);
+                        if (!shd) {
+                          shd = new THREE.MeshMatCapMaterial({
+                            map: m.material.map,
+                          });
+                        }
+                        m.material = shd;
+                        m.receiveShadow = m.castShadow = true;
+                      }
+                    }
+                  });
+
+                  //bg.scale.set(1.8, 1.8, 1.8)
+                  //const scale = 0.28;
+                  //model.scale.set(scale, scale, scale);
                 } else {
-                  // model.traverse(node=> {
-                  //   if (node.type === 'Mesh' && (!node.name.startsWith('keyboard') || !node.name.startsWith('screen') )) {
-                  //     node.material.polygonOffset = true;
-                  //     node.material.polygonOffsetFactor = -0.1;
-                  //     node.material.needsUpdating = true;
-                  //     node.material.side = THREE.DoubleSide;
-                  //   } else if (node.type === 'Material') {
-                  //     if(node.map) node.map.filter = THREE.LinearMipmapLinearFilter;
-                  //   }
-                  // })
-                  //ExportToGLTF('building.gltf', model);
+                  SceneManager.instance.createHelper(model);
                 }
               }
             }
@@ -119,7 +179,7 @@ export const createCSSElement = (el, scene, target)=>{
 }
 
 const setupTables = (model, scene, exportFile = false) => {
-  fixMaterials(model);
+
   const tGroup = new THREE.Object3D();
   tGroup.name = "tables";
   const size = new THREE.Box3()
@@ -140,7 +200,9 @@ const setupTables = (model, scene, exportFile = false) => {
   return tGroup;
 };
 
-const setupScreens = (tablesSet) => {
+const setupScreens = (tablesSet, scene = undefined) => {
+
+  //fixMaterials(model, true);
   const keyboard = new THREE.MeshLambertMaterial({
     color: 0x59f4f6,
     emissive: 0x59f4f6,
@@ -185,6 +247,9 @@ const setupScreens = (tablesSet) => {
             keyboard.alphaMap = node.material.alphaMap;
           }
           node.material = keyboard;
+        } else {
+          if (node.name.startsWith("table_geo"))
+            SceneManager.instance.createHelper(node);
         }
         //node.map.needsUpdate = true;
         node.castShadow = node.receiveShadow = true;
@@ -254,14 +319,17 @@ const fixMaterials = (asset, shadow = false) => {
           alphaMap: node.material.alphaMap || null,
           transparent: node.material.transparent || null,
           color: node.material.color || null,
-          metalness: isTable ? 0.2 : 0,
-          roughness: isTable ? 1 : 0,
+          metalness: isTable ? 0.8 : 0.2,
+          roughness: isTable ? 1 : 0.6,
+
           // normalMap: isTable? node.material.normalMap : null,
           // normalMapType: THREE.ObjectSpaceNormalMap,
         });
         tableMat[node.name].name = node.material.name;
       }
       node.material = tableMat[node.name];
+      // node.material.autoUpdate = false;
+      // node.material.needsUpdate = true;
 
       if (!node.name.startsWith("keyboard")) {
         if (node.name.startsWith("Mesh017"))
@@ -272,7 +340,7 @@ const fixMaterials = (asset, shadow = false) => {
       } else {
         if (!tableMat[node.name]) {
           tableMat[node.name] = new THREE.MeshBasicMaterial({
-            map: map || null,
+            // map: map || null,
             alphaMap: node.material.alphaMap || null,
             transparent: true,
             color: 0x5ff5ff,

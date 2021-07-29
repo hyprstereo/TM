@@ -176,10 +176,12 @@ export class TomiModel {
     this._voices = voices;
     this._voice;
     this._analyzerTM;
+    this.prop = { x: 0, y: 0, z: 0 , h: 1};
+
+    const mf = this.model.getObjectByName("face");
+
 
     const mf = this.model.children[0].getObjectByName("shield");
-
-
 
     if (scene) {
       this._mixer = new THREE.AnimationMixer(
@@ -204,23 +206,15 @@ export class TomiModel {
         self._faceLoaded = true;
         self.texture = texture;
         self.faceIndex("talk");
-<<<<<<< HEAD
+
         const faceMat = new THREE.MeshLambertMaterial({
           map: self.texture,
-          emmissive: 0x00eeff,
+         color: 0x00eeff,
         })
         mf.material = faceMat;
         // mf.material.map = self.texture;
         // mf.material.metalness = 0.4;
-        // mf.material.roughness = 0.7;
-        // mf.material.emissiveIntensity = 1.8;
-=======
 
-        mf.material.map = self.texture;
-        mf.material.metalness = 0.4;
-        mf.material.roughness = 0.7;
-       // mf.material.emissiveIntensity = 1.8;
->>>>>>> parent of 18dee6c... tomi
         // mf.material.flatShading =
       })
       .catch((e) => console.warn(e));

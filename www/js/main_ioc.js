@@ -165,6 +165,12 @@ export const init = async () => {
     mainRenderer = build.renderer;
     mainScene = build.scene;
     mainCamera = build.camera;
+    //SceneManager.instance.createLightProbe(mainScene);
+
+    SceneManager.instance.camera = mainCamera;
+    SceneManager.instance.renderer = mainRenderer;
+    SceneManager.instance.scene = mainScene;
+
     // controls = build.controls;
     const { composer, fxaa } = build.composer;
     mainComposer = composer;
