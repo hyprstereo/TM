@@ -193,6 +193,8 @@ export class TomiModel extends THREE.Object3D {
 
     const mf = this.model.getObjectByName("face");
 
+
+
     if (scene) {
       this._mixer = new THREE.AnimationMixer(
         this.model.getObjectByName("main_ctrl")
@@ -216,10 +218,14 @@ export class TomiModel extends THREE.Object3D {
         self._faceLoaded = true;
         self.texture = texture;
         self.faceIndex("talk");
-
-        mf.material.map = self.texture;
-        mf.material.metalness = 0.4;
-        mf.material.roughness = 0.7;
+        const faceMat = new THREE.MeshLambertMaterial({
+          map: self.texture,
+          emmissive: 0x00eeff,
+        })
+        mf.material = faceMat;
+        // mf.material.map = self.texture;
+        // mf.material.metalness = 0.4;
+        // mf.material.roughness = 0.7;
         // mf.material.emissiveIntensity = 1.8;
         // mf.material.flatShading =
       })
