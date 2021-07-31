@@ -15,7 +15,6 @@ import { SAOPass } from "/js/jsm/postprocessing/SAOPass.js";
 import { BloomFragment, BloomShader } from "/js/scene/ioc.js";
 import { panoControl } from "../pano.js";
 import Emitter from "/js/events/emitter.js";
-import { fileStats } from "../utils/helpers.js";
 import { TTS } from "../utils/tts.js";
 
 export class SceneManager extends Emitter {
@@ -166,39 +165,7 @@ export class SceneManager extends Emitter {
     });
     this._objects = { ...meshes, ...this._objects };
   }
-  async loadModel(src, prog = undefined) {
-    return await new Promise((res, rej) => {
-      const { name, ext } = fileStats(src);
-      let loader;
-      switch (ext) {
-        case "gltf":
-        case "glb":
-          loader = getLoader(this._loader, "gltf");
-          break;
-        case "json":
-        case "tmx":
-          loader = getLoader(this._loader, "object");
-          break;
-        default:
-          loader = getLoader(this._loader, "file");
-      }
 
-      loader.load(
-        src,
-        (asset) => {
-          res({ scene: asset.scene || asset, name: name });
-        },
-        (p) => {
-          if (prog) {
-            Object.apply(prog, [p.loaded, p.total]);
-          }
-        },
-        (err) => {
-          rej(err);
-        }
-      );
-    });
-  }
 
   reset() {}
 }

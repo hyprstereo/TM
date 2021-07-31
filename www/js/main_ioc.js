@@ -1,7 +1,7 @@
 import * as THREE from "./build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
 import { setupScene, setupControls, SETTINGS } from "./scene/config.js";
 import { LoadAssets } from "./scene/ioc.js";
-import { isMobile } from "./utils/helpers.js";
+import { TOMIController } from "./scene/tomi.controller.js";
 
 // global variables
 let mainCamera;
@@ -15,17 +15,18 @@ let stats;
 let loadScreen;
 let clock;
 let controls;
+let tomi;
 
 // setup three js function
 // usage ie:
 // var scene = await setupScene('#app', [id_name_for_canvas], [optional config = {}])
-// if (scene) {
+// if (scene) {s
 //    ...start the scene etc
 // }
 
 export const createLoadScreen = () => {
   loadScreen = document.querySelector("#overlay");
-  const prog = loadScreen.querySelector('.prog');
+  const prog = loadScreen.querySelector(".prog");
   const updateScreen = (msg) => {
     prog.innerHTML = `<span>${msg}</span>`;
   };
@@ -111,28 +112,19 @@ export const render = (ms = 0) => {
   if (stats) stats.begin();
   if (!paused) {
     //controls.update(clock.getDelta());
-
-    frameId = requestAnimationFrame(render);
+    // frameId = requestAnimationFrame(render);
   }
   if (controls) {
-    // const updated = controls.updated;
-    // if (updated) {
-    //   controls.onRender(clock.getDelta());
-    //   if (mainComposer) {
-    //     mainComposer.render();
-    //   } else {
-    //     mainRenderer.render(mainScene, mainCamera);
-    //   }
-    // }
-    controls.update()
+    // if(tomi) tomi.update(ms);
+
+    if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
+    controls.update();
     if (mainComposer) {
       mainComposer.render();
     } else {
       mainRenderer.render(mainScene, mainCamera);
     }
-
   }
-
 
   if (stats) stats.end();
 };
@@ -167,10 +159,6 @@ export const init = async () => {
     mainCamera = build.camera;
     //SceneManager.instance.createLightProbe(mainScene);
 
-    SceneManager.instance.camera = mainCamera;
-    SceneManager.instance.renderer = mainRenderer;
-    SceneManager.instance.scene = mainScene;
-
     // controls = build.controls;
     const { composer, fxaa } = build.composer;
     mainComposer = composer;
@@ -181,16 +169,75 @@ export const init = async () => {
 
     loadAsset(mainScene, (progress, total) => {
       fn("loading: " + progress.toString() + "/" + total.toString());
-    }).then((assets) => {
-      fn("Click to start.");
-      mainRenderer.shadowMap.needsUpdate = true;
+    })
+      .then(({ assets }) => {
+        new TOMIController()
+          .load("/models/tomi-anim2.glb")
+          .then((tomicls) => {
+            tomi = tomicls;
+            const delay = _.debounce(() => {
+              tomi.randomClip();
+            }, 4000);
+            //tomi.addEventListener('animationend', (e) => delay())
+            mainScene.add(tomi);
 
-      controls = setupControls(mainCamera, mainScene, "#overlay", mainRenderer);
-      clock.start();
-      render(0);
-    });
+            tomi.play("hand.idle");
+            anime({
+              targets: '#overlay',
+              opacity: 0
+            })
+            playScene()
+            sceneLoadCompleted();
+          })
+          .catch((er) => console.error(er));
+      })
+      .catch((e) => console.warn(e));
   }
 };
+
+const playScene = () => {
+  mainRenderer.shadowMap.needsUpdate = true;
+  clock.start();
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
+  createjs.Ticker.addEventListener("tick", render);
+};
+
+function sceneLoadCompleted() {
+  tomi.lookAt(mainCamera.position);
+
+  document.body.onkeydown = (e) => {
+    if (e.key == "t") {
+      //mainCamera.layers.toggle(SceneManager.instance._layers.helpers);
+      tomi.randomClip();
+    } else if (e.key == "s") {
+      const p = prompt(`enter text`, `EXR.. it's in the game!`);
+      SceneManager.instance.speech.speak(p);
+    } else if (e.key == "f") {
+      const p = tomi.position.clone();
+      p.y = 1;
+      controls.target = p;
+      createjs.Tween.get(mainCamera.position).to(
+        { z: tomi.position.z - 2 },
+        6000,
+        createjs.Ease.sineOut
+      );
+    }
+  };
+
+
+
+  window.loadProgress("Click to start.");
+  document.body.onclick = () => {
+    if (!clock.running) {
+      // tts.speak("hello there.. How are you doing?");
+
+
+      //render(0);
+     // playScene();
+    }
+    anime({targets: '#overlay', opacity: 0});
+  }
+}
 
 document.body.onload = async (evt) => {
   await init();
