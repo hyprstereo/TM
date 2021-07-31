@@ -45,8 +45,8 @@ export const LoadAssets = async (
     let counter = 0;
 
     const files = SETTINGS.useExportedAssets
-      ? [Assets[0], Assets[1], Assets[2]]
-      : [Assets[0], Assets[2], Assets[3]];
+      ? [Assets[0], Assets[1]]
+      : [Assets[0], Assets[3]];
 
     files.forEach((file, i) => {
       const name = getName(file);
@@ -54,7 +54,7 @@ export const LoadAssets = async (
         file,
         (asset) => {
           let model = asset.scene || asset;
-
+          assets.push(model);
           if (name == "nulls") {
             tablePositions = getPositions(model.children[0], scene);
           } else {
@@ -79,13 +79,6 @@ export const LoadAssets = async (
                   //bg.rotation.y = degToRad(180)
                   model.traverse(m => {
                     if (m.type === 'Bone') {
-
-
-
-
-                      //s.rotation.copy(m.rotation)
-                      //m.scale.set(1,1,1)
-                      //m.root.rotation.y = degToRad(180);
                       const s = new THREE.SkeletonHelper(m);
                       s.layers.set(SceneManager.instance._layers.helpers);
                       s.position.copy(m.position);
@@ -97,9 +90,10 @@ export const LoadAssets = async (
                   //model.scale.set(scale, scale, scale);
                 } else  {
                   SceneManager.instance.createHelper(model);
+
                 }
               }
-              assets.push(model);
+
             }
           }
           counter++;

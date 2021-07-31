@@ -7,12 +7,10 @@ import {
 } from "./scene/config.js";
 import { testUI } from "./scene/ioc-ui.js";
 import { LoadAssets } from "./scene/ioc.js";
-import { degToRad, isMobile } from "./utils/helpers.js";
-import { TTS } from "./utils/tts.js";
 import ThreeMeshUI from "./build/three-mesh-ui/three-mesh-ui.js";
-import { TomiModel } from "./tomi.js";
-import {TWEEN} from './jsm/libs/tween.module.min.js'
-
+import { TomiModel } from "./scene/tomi.js";
+import { FBXLoader } from "./jsm/loaders/FBXLoader.js";
+import { TOMIController } from "./scene/tomi.controller.js";
 
 // global variables
 let mainCamera;
@@ -123,21 +121,19 @@ export const render = (ms = 0) => {
   if (stats) stats.begin();
   if (!paused) {
     //controls.update(clock.getDelta());
-
-   // frameId = requestAnimationFrame(render);
+    // frameId = requestAnimationFrame(render);
   }
   //TWEEN.update();
   if (controls) {
-    tomi.update(ms);
+    // if(tomi) tomi.update(ms);
     ThreeMeshUI.update();
-
+    if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
     controls.update();
     if (mainComposer) {
       mainComposer.render();
     } else {
       mainRenderer.render(mainScene, mainCamera);
     }
-
   }
 
   if (stats) stats.end();
@@ -172,10 +168,6 @@ export const init = async () => {
     mainScene = build.scene;
     mainCamera = build.camera;
 
-    SceneManager.instance.camera = mainCamera;
-    SceneManager.instance.renderer = mainRenderer;
-    SceneManager.instance.scene = mainScene;
-
     // controls = build.controls;
     const { composer, fxaa } = build.composer;
     mainComposer = composer;
@@ -188,73 +180,70 @@ export const init = async () => {
       fn("loading: " + progress.toString() + "/" + total.toString());
     })
       .then(({ assets }) => {
-        const t = assets[1];
-        SceneManager.instance.createHelper(t, THREE.SkeletonHelper);
-        if (t) {
-          tomi = new TomiModel(t, "#tomi-face", mainScene, null, 4, 4, mainCamera);
-          tomi
-            .playVoice("./audio/cm_audio/0_Benefits01NEW.mp3", 0.5)
-            .then((sound) => {
-              //TODO: play 3D animation
-              //dome.media.play();
-              tomi.play();
-              render(0);
-            });
-            createjs.Ticker.timingMode = createjs.Ticker.RAF;
-            createjs.Ticker.addEventListener("tick", render);
-        }
-        console.log(assets, tomi);
-        fn("Click to start.");
-        const ui = testUI(mainScene);
-        //ui.position.copy(tomi.position);
-        //mainScene.add(ui);
-
-        controls.target.copy(new THREE.Vector3());
-
-        ui.scale.set(0.5, 0.5, 0.5);
-
-        ui.position.y -= 0.4;
-
-        ui.position.z += 2;
-        //ui.lookAt(controls.target);
-       // tomi.smoothLookAt(mainCamera.position)
-       tomi.add(ui);
-       tomi.lookAt(mainCamera.position);
-
-        ThreeMeshUI.update();
-        const loadFn = (e) => {
-          if (!clock.running) {
-            controls.lock();
-            // tts.speak("hello there.. How are you doing?");
-            mainRenderer.shadowMap.needsUpdate = true;
-            clock.start();
-            //tomi.smoothLookAt(mainCamera.position)
-            render(0);
-
-          }
-        };
-
-        document.body.onkeydown = (e) => {
-          if (e.key == "t") {
-            mainCamera.layers.toggle(SceneManager.instance._layers.helpers);
-          } else if(e.key == 's') {
-            const p = prompt(`enter text`,  `EXR.. it's in the game!`)
-            SceneManager.instance.speech.speak(p)
-          } else if (e.key == 'f') {
-            const p = tomi.model.position.clone();
-            p.y = 1;
-            controls.target = p;
-            createjs.Tween.get(mainCamera.position).to({z: tomi.position.z - 2}, 6000, createjs.Ease.sineOut);
-          }
-        };
-        document.body.onclick = (e) => {
-          loadFn();
-        };
-        //document.body.addEventListener("pointerdown", loadFn);
+        new TOMIController()
+          .load("/models/tomi-anim2.glb")
+          .then((tomicls) => {
+            tomi = tomicls;
+            const delay = _.debounce(() => {
+              tomi.randomClip();
+            }, 4000);
+            //tomi.addEventListener('animationend', (e) => delay())
+            console.log(assets, tomi);
+            mainScene.add(tomi);
+            sceneLoadCompleted();
+            tomi.play("hand.idle");
+          })
+          .catch((er) => console.error(er));
       })
       .catch((e) => console.warn(e));
   }
 };
+
+const playScene = () => {
+  clock.start();
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
+  createjs.Ticker.addEventListener("tick", render);
+};
+
+function sceneLoadCompleted() {
+  tomi.lookAt(mainCamera.position);
+
+  ThreeMeshUI.update();
+  const loadFn = (e) => {
+    if (!clock.running) {
+      controls.lock();
+      // tts.speak("hello there.. How are you doing?");
+      mainRenderer.shadowMap.needsUpdate = true;
+
+      //render(0);
+      playScene();
+    }
+  };
+
+  document.body.onkeydown = (e) => {
+    if (e.key == "t") {
+      //mainCamera.layers.toggle(SceneManager.instance._layers.helpers);
+      tomi.randomClip();
+    } else if (e.key == "s") {
+      const p = prompt(`enter text`, `EXR.. it's in the game!`);
+      SceneManager.instance.speech.speak(p);
+    } else if (e.key == "f") {
+      const p = tomi.position.clone();
+      p.y = 1;
+      controls.target = p;
+      createjs.Tween.get(mainCamera.position).to(
+        { z: tomi.position.z - 2 },
+        6000,
+        createjs.Ease.sineOut
+      );
+    }
+  };
+  document.body.onclick = (e) => {
+    loadFn();
+  };
+
+  window.loadProgress("Click to start.");
+}
 
 document.body.onload = async (evt) => {
   await init();

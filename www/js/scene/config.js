@@ -38,7 +38,7 @@ export class SceneManager extends Emitter {
     this._isNew = true;
     this._isLoading = false;
     this._isBusy = false;
-    this.speech = new TTS({voice: 0, pitch: 1.001});
+    this.speech = new TTS({voice: 9, pitch: 1.001});
     this._layers = {
       lights: 2,
       meshes: 1,

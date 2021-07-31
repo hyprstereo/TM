@@ -11,10 +11,10 @@ export class TTS extends Emitter {
 
     super();
     this.speech = new SpeechSynthesisUtterance();
-    this.lang = config.lang || 'en';
+    this.lang = config.lang || 'en-US';
     this.populateVoices()
     this.pitch = config.pitch || 1.2;
-    this.voice = config.voice || 2;
+    this.voice = config.voice || 0;
     this.volume = 0.5;
     this.speech.onstart = (e) => this.emit('onstart', e);
     this.speech.onend = (e) => this.emit('onstart', e);
