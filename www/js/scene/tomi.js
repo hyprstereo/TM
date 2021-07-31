@@ -1,4 +1,4 @@
-import { degToRad } from "./utils/helpers.js";
+import { degToRad } from "../utils/helpers.js";
 import * as THREE from "/js/build/three.module.js";
 import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
 
@@ -180,8 +180,6 @@ export class TomiModel {
 
     const mf = this.model.getObjectByName("face");
 
-
-    const mf = this.model.children[0].getObjectByName("shield");
 
     if (scene) {
       this._mixer = new THREE.AnimationMixer(

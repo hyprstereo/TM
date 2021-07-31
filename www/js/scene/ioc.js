@@ -6,17 +6,7 @@ import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
 
-// function rl(scene, tablesSet) {
-//   const b = new THREE.Box3().setFromObject(tablesSet);
-//   const s = b.getSize(tablesSet.position);
-//   const width = s.x;
-//   const height = s.z;
-//   const intensity = 1;
-//   const rectLight = new THREE.RectAreaLight(0xffffff, intensity, width, height);
-//   rectLight.position.set(0, 4, 0);
-//   rectLight.lookAt(0, 0, 0);
-//   scene.add(rectLight);
-// }
+
 export const Assets = [
   "/models/ioc/building2.glb",
   "/models/ioc/tables.glb",
@@ -58,15 +48,15 @@ export const LoadAssets = async (
 
     const files = SETTINGS.useExportedAssets
       ? [Assets[0], Assets[1]]
-      : [Assets[0], Assets[2]];
+      : [Assets[0], Assets[3]];
 
     files.forEach((file, i) => {
       const name = getName(file);
       loader.load(
         file,
         (asset) => {
-          const model = asset.scene || asset;
-
+          let model = asset.scene || asset;
+          assets.push(model);
           if (name == "nulls") {
             tablePositions = getPositions(model.children[0], scene);
           } else {
@@ -90,17 +80,14 @@ export const LoadAssets = async (
                   model.add(bg);
                   bg.position.set(0, 0, 0);
                   //bg.rotation.y = degToRad(180)
-                  model.traverse((m) => {
-                    if (m.type === "Bone") {
-                      //s.rotation.copy(m.rotation)
-                      //m.scale.set(1,1,1)
-                      //m.root.rotation.y = degToRad(180);
+                  model.traverse(m => {
+                    if (m.type === 'Bone') {
                       const s = new THREE.SkeletonHelper(m);
-                      s.layers.set(SceneManager.instance._layers.helpers);
+                    //  s.layers.set(SceneManager.instance._layers.helpers);
                       s.position.copy(m.position);
                       scene.add(s);
                     } else if (
-                      m.type === "Mesh" &&
+                      m.type ===  "Mesh" &&
                       (m.name.startsWith("body_28") ||
                         m.name.startsWith("mesh35_"))
                     ) {
@@ -139,7 +126,8 @@ export const LoadAssets = async (
                   //const scale = 0.28;
                   //model.scale.set(scale, scale, scale);
                 } else {
-                  SceneManager.instance.createHelper(model);
+                 // SceneManager.instance.createHelper(model);
+
                 }
               }
             }
@@ -248,8 +236,7 @@ const setupScreens = (tablesSet, scene = undefined) => {
           }
           node.material = keyboard;
         } else {
-          if (node.name.startsWith("table_geo"))
-            SceneManager.instance.createHelper(node);
+
         }
         //node.map.needsUpdate = true;
         node.castShadow = node.receiveShadow = true;

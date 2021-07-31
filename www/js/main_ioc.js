@@ -1,6 +1,7 @@
 import * as THREE from "./build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
 import { setupScene, setupControls, SETTINGS } from "./scene/config.js";
 import { LoadAssets } from "./scene/ioc.js";
+import { TOMIController } from "./scene/tomi.controller.js";
 import { isMobile } from "./utils/helpers.js";
 
 // global variables
@@ -15,6 +16,7 @@ let stats;
 let loadScreen;
 let clock;
 let controls;
+let tomi;
 
 // setup three js function
 // usage ie:
@@ -109,11 +111,7 @@ export const applyEnvMap = (target, source, ...names) => {
 
 export const render = (ms = 0) => {
   if (stats) stats.begin();
-  if (!paused) {
-    //controls.update(clock.getDelta());
 
-    frameId = requestAnimationFrame(render);
-  }
   if (controls) {
     // const updated = controls.updated;
     // if (updated) {
@@ -124,6 +122,7 @@ export const render = (ms = 0) => {
     //     mainRenderer.render(mainScene, mainCamera);
     //   }
     // }
+    if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
     controls.update()
     if (mainComposer) {
       mainComposer.render();
@@ -167,9 +166,6 @@ export const init = async () => {
     mainCamera = build.camera;
     //SceneManager.instance.createLightProbe(mainScene);
 
-    SceneManager.instance.camera = mainCamera;
-    SceneManager.instance.renderer = mainRenderer;
-    SceneManager.instance.scene = mainScene;
 
     // controls = build.controls;
     const { composer, fxaa } = build.composer;
@@ -182,12 +178,32 @@ export const init = async () => {
     loadAsset(mainScene, (progress, total) => {
       fn("loading: " + progress.toString() + "/" + total.toString());
     }).then((assets) => {
-      fn("Click to start.");
-      mainRenderer.shadowMap.needsUpdate = true;
+      new TOMIController()
+          .load("/models/tomi-anim2.glb")
+          .then((tomicls) => {
+            tomi = tomicls;
+            const delay = _.debounce(() => {
+              tomi.randomClip();
+            }, 4000);
+            //tomi.addEventListener('animationend', (e) => delay())
+            controls = setupControls(mainCamera, mainScene, "#overlay", mainRenderer);
+            mainScene.add(tomi);
 
-      controls = setupControls(mainCamera, mainScene, "#overlay", mainRenderer);
-      clock.start();
-      render(0);
+            tomi.play("hand.idle");
+            window.loadProgress("Click to start.");
+            document.body.onclick = () => {
+              if (!clock.running) {
+                mainRenderer.shadowMap.needsUpdate = true;
+                clock.start();
+                createjs.Ticker.timingMode = createjs.Ticker.RAF;
+                createjs.Ticker.addEventListener("tick", render);
+              }
+              anime({targets: '#overlay', opacity: 0});
+            }
+          })
+          .catch((er) => console.error(er));
+
+
     });
   }
 };
