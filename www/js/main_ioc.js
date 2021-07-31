@@ -21,13 +21,13 @@ let tomi;
 // setup three js function
 // usage ie:
 // var scene = await setupScene('#app', [id_name_for_canvas], [optional config = {}])
-// if (scene) {
+// if (scene) {s
 //    ...start the scene etc
 // }
 
 export const createLoadScreen = () => {
   loadScreen = document.querySelector("#overlay");
-  const prog = loadScreen.querySelector('.prog');
+  const prog = loadScreen.querySelector(".prog");
   const updateScreen = (msg) => {
     prog.innerHTML = `<span>${msg}</span>`;
   };
@@ -129,9 +129,7 @@ export const render = (ms = 0) => {
     } else {
       mainRenderer.render(mainScene, mainCamera);
     }
-
   }
-
 
   if (stats) stats.end();
 };
@@ -165,7 +163,6 @@ export const init = async () => {
     mainScene = build.scene;
     mainCamera = build.camera;
     //SceneManager.instance.createLightProbe(mainScene);
-
 
     // controls = build.controls;
     const { composer, fxaa } = build.composer;
@@ -207,6 +204,50 @@ export const init = async () => {
     });
   }
 };
+
+const playScene = () => {
+  mainRenderer.shadowMap.needsUpdate = true;
+  clock.start();
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
+  createjs.Ticker.addEventListener("tick", render);
+};
+
+function sceneLoadCompleted() {
+  tomi.lookAt(mainCamera.position);
+
+  document.body.onkeydown = (e) => {
+    if (e.key == "t") {
+      //mainCamera.layers.toggle(SceneManager.instance._layers.helpers);
+      tomi.randomClip();
+    } else if (e.key == "s") {
+      const p = prompt(`enter text`, `EXR.. it's in the game!`);
+      SceneManager.instance.speech.speak(p);
+    } else if (e.key == "f") {
+      const p = tomi.position.clone();
+      p.y = 1;
+      controls.target = p;
+      createjs.Tween.get(mainCamera.position).to(
+        { z: tomi.position.z - 2 },
+        6000,
+        createjs.Ease.sineOut
+      );
+    }
+  };
+
+
+
+  window.loadProgress("Click to start.");
+  document.body.onclick = () => {
+    if (!clock.running) {
+      // tts.speak("hello there.. How are you doing?");
+
+
+      //render(0);
+     // playScene();
+    }
+    anime({targets: '#overlay', opacity: 0});
+  }
+}
 
 document.body.onload = async (evt) => {
   await init();
