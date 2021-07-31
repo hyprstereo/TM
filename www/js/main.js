@@ -7,7 +7,7 @@ import { ShaderPass } from "./jsm/postprocessing/ShaderPass.js";
 import { CopyShader } from "./jsm/shaders/CopyShader.js";
 import { EffectComposer } from "./jsm/postprocessing/EffectComposer.js";
 import { createPanoVideo, panoControl } from "./pano.js";
-import { setupTomiFacial, Tomi, TomiModel } from "./tomi.js";
+import { setupTomiFacial, Tomi, TomiModel } from "./scene/tomi.js";
 import { SAOPass } from "./jsm/postprocessing/SAOPass.js";
 import {degToRad} from './utils/helpers.js'
 
