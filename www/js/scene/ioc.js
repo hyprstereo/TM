@@ -56,7 +56,7 @@ export const LoadAssets = async (
       loader.load(
         file,
         (asset) => {
-          let model = asset.scene || asset;
+          let model = asset;//asset.scene || asset;
           assets.push(model);
           if (name == "nulls") {
             tablePositions = getPositions(model.children[0], scene);

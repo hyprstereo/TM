@@ -18,3 +18,6 @@ $ npm run serve
 ```
 
 browse http://localhost:8000
+
+
+- added rollup bundler

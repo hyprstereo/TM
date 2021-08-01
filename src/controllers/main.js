@@ -1,0 +1,154 @@
+import * as THREE from "../build/three.module.js";
+import { setupControls, setupScene } from "../scene/config.js";
+import Emitter from "../events/emitter.js";
+import { postEffects } from "../scene/config.js";
+class SceneManagerImpl extends Emitter {
+  constructor() {
+    super();
+    this.clock = new THREE.Clock(false);
+    this.renderer;
+    this.camera;
+    this.scene;
+    this.composer;
+    this.fxaa;
+    this.renderTargets;
+    this.tomi;
+  }
+
+  async setup(target = "#app", props = undefined) {
+    const build = await setupWebGL(target, props);
+    if (build) {
+      this.camera = build.camera;
+      this.renderer = build.renderer;
+      this.scene = build.scene;
+
+      setupLightings(this.scene);
+      const { composer, fxaa } = postEffects(
+        this.renderer,
+        this.scene,
+        this.camera,
+        null
+      );
+      this.composer = composer;
+      this.fxaa = fxaa;
+    } else {
+      console.warn("setupGLError");
+    }
+    this.scene = build.scene;
+
+    // setupLightings(this.scene, 1.9, 1.2, 1024)
+    // this.composer = postEffects(this.renderer, this.scene, this.camera, undefined, );
+    // this.fxaa = build.composer.fxaa;
+
+    this.controls = setupControls(
+      this.camera,
+      this.scene,
+      "#app",
+      this.renderer
+    );
+
+    return build;
+  }
+
+  play() {
+    this.clock.start();
+    createjs.Ticker.timingMode = createjs.Ticker.RAF;
+    createjs.Ticker.addEventListener("tick", this._onRender.bind(this));
+  }
+
+  stop() {
+    this.clock.stop();
+    createjs.Ticker.removeEventListener("tick", this._onRender.bind(this));
+  }
+
+  _onRender(ms) {
+    this.emit("render", this.clock.getDelta(), this.clock.getElapsedTime());
+
+    //this.controls.update();
+    //if (this.tomi)
+
+    //this.composer.render();
+    // export const render = (ms = 0) => {
+    //   if (stats) stats.begin();
+
+    //   if (controls) {
+
+    //     if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
+    //     controls.update();
+    if (SceneManager.composer) {
+      SceneManager.composer.render();
+    }
+    // } else {
+    //   mainRenderer.render(mainScene, mainCamera);
+    // }
+    //   }
+  }
+}
+
+const RendererProps = {
+  antialias: false,
+  alpha: false,
+  depth: true,
+  autoRender: false,
+  autoClear: false,
+  pixelRatio: window.devicePixelRatio,
+};
+
+const setupWebGL = async (target = "#app", props = undefined) => {
+  const el = document.querySelector(target);
+  const build = await setupScene(target, "tm-three", {
+    resizeTo: el,
+    ...RendererProps,
+    ...props,
+  });
+
+  return build;
+};
+
+const setupLightings = (scene, sun = 1.8, ambient = 1.2, shadow = 1024) => {
+  const light = new THREE.AmbientLight(0xffffff, ambient);
+  createHelper(light, () => new THREE.PointLightHelper(light, 0.2, 0xffff00));
+  light.position.set(0, 5, 2);
+
+  const sunl = new THREE.DirectionalLight(0xffffff, sun);
+  const sunH = new THREE.DirectionalLightHelper(sunl, 1, 0xffff00);
+  sunl.add(sunH);
+
+  sunl.position.set(1, 5, 1);
+  sunl.lookAt(0, 0, 0);
+  sunl.castShadow = true;
+
+  scene.add(sunl);
+  scene.add(light);
+
+  if (shadow) {
+    sunl.shadow.bias = -0.0001;
+    sunl.shadow.mapSize.width = shadow;
+    sunl.shadow.mapSize.height = shadow;
+    sunl.shadow.camera.near = 0;
+    sunl.shadow.camera.far = 500;
+  }
+
+  return {
+    sunl,
+    ambient,
+  };
+};
+
+function createHelper(object, helperType = undefined) {
+  let helper;
+  if (helperType) {
+    helper = helperType();
+    helper.layers.set(7);
+    object.add(helper);
+  } else {
+    const b = new THREE.Box3().setFromObject(object);
+    const size = b.getSize(new THREE.Vector3());
+    helper.layers.set(7);
+    object.add(helper);
+  }
+
+  return object;
+}
+
+export const SceneManager = new SceneManagerImpl();
