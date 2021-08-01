@@ -9,13 +9,20 @@ import { RenderPass } from "/js/jsm/postprocessing/RenderPass.js";
 import { FXAAShader } from "/js/jsm/shaders/FXAAShader.js";
 import { ShaderPass } from "/js/jsm/postprocessing/ShaderPass.js";
 import { CopyShader } from "/js/jsm/shaders/CopyShader.js";
-import { UnrealBloomPass } from "/js/jsm/postprocessing/UnrealBloomPass.js";
+import { BloomPass } from "/js/jsm/postprocessing/BloomPass.js";
+import { OutlinePass } from "/js/jsm/postprocessing/OutlinePass.js";
+import { SSRPass } from "/js/jsm/postprocessing/SSRPass.js";
+import { ReflectorForSSRPass } from "../jsm/objects/ReflectorForSSRPass.js";
+
 import { EffectComposer } from "/js/jsm/postprocessing/EffectComposer.js";
 import { SAOPass } from "/js/jsm/postprocessing/SAOPass.js";
 import { BloomFragment, BloomShader } from "/js/scene/ioc.js";
 import { panoControl } from "../pano.js";
 import Emitter from "/js/events/emitter.js";
-import { TTS } from "../utils/tts.js";
+import { TTS } from "/js/utils/tts.js";
+import { Vector2 } from "/js/build/three.module.js";
+
+export let reflects = [];
 
 export class SceneManager extends Emitter {
   static __instance;
@@ -37,7 +44,7 @@ export class SceneManager extends Emitter {
     this._isNew = true;
     this._isLoading = false;
     this._isBusy = false;
-    this.speech = new TTS({voice: 0, pitch: 1.001});
+    this.speech = new TTS({ voice: 0, pitch: 1.001 });
     this._layers = {
       lights: 2,
       meshes: 1,
@@ -112,13 +119,13 @@ export class SceneManager extends Emitter {
     }
   }
 
-
-
   createHelper(mesh, helperType = undefined) {
     if (mesh.type === "Mesh") {
       if (!mesh.helper) {
         const box = new THREE.Box3().setFromObject(mesh);
-        const bhelper = (helperType) ? new helperType(mesh) : new THREE.Box3Helper(box, 0xffff00);
+        const bhelper = helperType
+          ? new helperType(mesh)
+          : new THREE.Box3Helper(box, 0xffff00);
         bhelper.layers.set(this._layers.helpers);
         //mesh.layers.set(this._layers.meshes);
         mesh.add(bhelper);
@@ -166,7 +173,6 @@ export class SceneManager extends Emitter {
     this._objects = { ...meshes, ...this._objects };
   }
 
-
   reset() {}
 }
 
@@ -191,7 +197,7 @@ export const SETTINGS = {
   ambient: 1.8,
   sun: 1.2,
   shadow: true,
-  bloom: false,
+  bloom: true,
   ao: false,
   BLOOM_SCENE: 1,
   tone: THREE.NoToneMapping,
@@ -199,6 +205,8 @@ export const SETTINGS = {
   precision: "highp",
   gamma: 2.2,
   useExportedAssets: true,
+  reflective: false,
+  outlined: true
 };
 
 export const setupScene = async (
@@ -348,14 +356,50 @@ export const postEffects = (
   const pixelRatio = renderer.getPixelRatio();
 
   const container = renderer.domElement;
+  const dim = new Vector2(container.offsetWidth, container.offsetHeight);
+
   const fxaa = fxaaPass;
   fxaaPass.material.uniforms["resolution"].value.x =
-    1 / (container.offsetWidth * pixelRatio);
+    1 / (dim.x * pixelRatio);
   fxaaPass.material.uniforms["resolution"].value.y =
-    1 / (container.offsetHeight * pixelRatio);
+    1 / (dim.y * pixelRatio);
   const target = renderTarget || renderer;
 
   const composer = new EffectComposer(target);
+
+  let reflects;
+
+  if (SETTINGS.reflective) {
+    const plane = new THREE.PlaneBufferGeometry(10, 10, 32);
+    const grReflector = new ReflectorForSSRPass(plane, {
+      clipBias: 0.003,
+      textureWidth: dim.x,
+      textureHeight: dim.y,
+      color: 0x888888,
+      useDepthTexture: true,
+    });
+    grReflector.material.depthWrite = false;
+    grReflector.rotation.x = -Math.PI / 2;
+    grReflector.visible = false;
+
+    const ssrPass = new SSRPass({
+      renderer,
+      scene,
+      camera,
+      width: dim.x,
+      height: dim.y,
+      groundReflector: grReflector,
+      selects: reflects,
+    });
+    reflects = { ssr: ssrPass, ground: grReflector };
+    composer.addPass(ssrPass);
+    ssrPass.thickness = 0.018;
+    ssrPass.maxDistance = 0.1;
+    ssrPass.blur = true;
+
+  }
+
+
 
   if (SETTINGS.ao && !isMobile()) {
     const sao = new SAOPass(scene, camera, false, true);
@@ -371,45 +415,31 @@ export const postEffects = (
     params.saoBlurStdDev = 4;
     params.saoBlurDepthCutoff = 0.01;
   }
-  if (SETTINGS.bloom && !isMobile()) {
-    const bloomLayer = new THREE.Layers();
-    bloomLayer.set(SETTINGS.BLOOM_SCENE);
 
-    const bloomParam = {
-      exposure: 1,
-      bloomStrength: 5,
-      bloomThreshold: 0,
-      bloomRadius: 0,
-    };
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.5,
-      0.4,
-      0.85
-    );
-    bloomPass.threshold = bloomParam.bloomThreshold;
-    bloomPass.strength = bloomParam.bloomStrength;
-    bloomPass.radius = bloomParam.bloomRadius;
-    const bloomComposer = new EffectComposer(renderer);
-    bloomComposer.renderToScreen = false;
-    bloomComposer.addPass(renderPass);
-    bloomComposer.addPass(bloomPass);
-    const finalPass = new ShaderPass(
-      new THREE.ShaderMaterial({
-        uniforms: {
-          baseTexture: { value: null },
-          bloomTexture: { value: bloomComposer.renderTarget2.texture },
-        },
-        vertexShader: BloomShader,
-        fragmentShader: BloomFragment,
-        defines: {},
-      }),
-      "baseTexture"
-    );
-    finalPass.needsSwap = true;
-    composer.addPass(finalPass);
+  let blooms;
+  let fxCopy;
+  if (SETTINGS.bloom && !isMobile()) {
+    fxCopy = new ShaderPass(CopyShader);
+    const bloomPass = new BloomPass(1, 25, 5);
+    fxCopy.renderToScreen = true;
+
+    composer.addPass(bloomPass);
   }
   composer.addPass(renderPass);
+
+  let outline;
+  if(SETTINGS.outlined) {
+    let selects = [];
+    const outlinePass = new OutlinePass(dim, scene, camera, selects);
+    outlinePass.edgeThickness = 2;
+    outline = {selects: selects, pass: outlinePass}
+    composer.addPass(outlinePass);
+  }
+
+  if (fxCopy) {
+    composer.addPass(fxCopy);
+  }
   composer.addPass(fxaaPass);
-  return { composer, fxaa };
+
+  return { composer, fxaa, reflects, outline };
 };

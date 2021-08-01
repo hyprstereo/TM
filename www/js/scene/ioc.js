@@ -1,11 +1,12 @@
 import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
 import * as THREE from "/js/build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
-import { SETTINGS } from "../scene/config.js";
+import { reflects, SETTINGS } from "../scene/config.js";
 import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
-
+import { InteractiveObject } from "../interact/interactiveobject.js";
+import { Box3Helper } from "../build/three.module.js";
 
 export const Assets = [
   "/models/ioc/building2.glb",
@@ -80,14 +81,14 @@ export const LoadAssets = async (
                   model.add(bg);
                   bg.position.set(0, 0, 0);
                   //bg.rotation.y = degToRad(180)
-                  model.traverse(m => {
-                    if (m.type === 'Bone') {
+                  model.traverse((m) => {
+                    if (m.type === "Bone") {
                       const s = new THREE.SkeletonHelper(m);
-                    //  s.layers.set(SceneManager.instance._layers.helpers);
+                      //  s.layers.set(SceneManager.instance._layers.helpers);
                       s.position.copy(m.position);
                       scene.add(s);
                     } else if (
-                      m.type ===  "Mesh" &&
+                      m.type === "Mesh" &&
                       (m.name.startsWith("body_28") ||
                         m.name.startsWith("mesh35_"))
                     ) {
@@ -126,8 +127,7 @@ export const LoadAssets = async (
                   //const scale = 0.28;
                   //model.scale.set(scale, scale, scale);
                 } else {
-                 // SceneManager.instance.createHelper(model);
-
+                  // SceneManager.instance.createHelper(model);
                 }
               }
             }
@@ -153,21 +153,19 @@ export const LoadAssets = async (
 };
 
 export const loadFrame = (url) => {
-  const iframe = document.createElement('iframe');
+  const iframe = document.createElement("iframe");
   iframe.style.width = `100%`;
   iframe.style.height = `100%`;
   iframe.src = url;
   return iframe;
-}
+};
 
-export const createCSSElement = (el, scene, target)=>{
+export const createCSSElement = (el, scene, target) => {
   const cr = new CSS3DRenderer();
   const obj = new CSS3DObject(el);
-
-}
+};
 
 const setupTables = (model, scene, exportFile = false) => {
-
   const tGroup = new THREE.Object3D();
   tGroup.name = "tables";
   const size = new THREE.Box3()
@@ -189,7 +187,7 @@ const setupTables = (model, scene, exportFile = false) => {
 };
 
 const setupScreens = (tablesSet, scene = undefined) => {
-
+  const iTables = [];
   //fixMaterials(model, true);
   const keyboard = new THREE.MeshLambertMaterial({
     color: 0x59f4f6,
@@ -203,45 +201,58 @@ const setupScreens = (tablesSet, scene = undefined) => {
   const screen2 = screen.clone();
 
   const lt = new THREE.TextureLoader();
-  lt.load('../../ui/ioc/screen/a15.png', (t) =>{
+  lt.load("../../ui/ioc/screen/a15.png", (t) => {
     t.flipY = false;
     screen2.map = t;
-  })
+  });
   lt.load("../../ui/ioc/screen/A12.png", (texture) => {
     texture.flipY = false;
     screen.map = texture;
     let counter = 0;
+    let box;
+    const data = {
+      interactive: true,
+      state: 0,
+      id: "",
+    };
     tablesSet.traverse((node) => {
+      const child = node;
 
       if (node.type === "Mesh") {
-        // if (node.name.startsWith("table_geo_00000") && node.material.name.startsWith('chair_table_mat')) {
-        //   if (!tmat) {
-        //     tmat = new THREE.MeshStandardMaterial({
-        //       map: node.map,
-        //       color: 0x888888,
-        //     })
-        //   }
 
-        //   node.material = tmat;
 
-        //   node.castShadow = node.receiveShadow = true;
+        // const phongMaterial = new THREE.MeshPhongMaterial({
+        //   color: 0xffffff,
+        //   specular: 0x111111,
+        //   shininess: 5,
+        // });
+        // child.material = phongMaterial;
+        // child.receiveShadow = true;
+        // child.castShadow = true;
+        if (node.name.startsWith('Scene0')) {
+          node.userData =  node.userData = { ...data, id: node.name, child: node.children };
+        }
         if (node.name.startsWith("dus")) {
           node.material.side = THREE.DoubleSide;
         } else if (node.material.name.startsWith("screen_monitor")) {
-          node.material = (counter % 2 == 0) ? screen : screen2;
+          reflects.push(node);
+          node.material = counter % 2 == 0 ? screen : screen2;
         } else if (node.name.startsWith("keyboard")) {
           if (!keyboard.map) {
             keyboard.map = node.material.map;
             keyboard.alphaMap = node.material.alphaMap;
           }
           node.material = keyboard;
-        } else {
+        } else if (node.name.startsWith("table_geo")) {
+          reflects.push(node);
+
 
         }
-        //node.map.needsUpdate = true;
+
         node.castShadow = node.receiveShadow = true;
-      } else {
       }
+      //node.map.needsUpdate = true;
+
       counter++;
     });
   });

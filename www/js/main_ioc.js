@@ -1,4 +1,5 @@
 import * as THREE from "./build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
+import { Pointer3D } from "./interact/pointer.js";
 import { setupScene, setupControls, SETTINGS } from "./scene/config.js";
 import { LoadAssets } from "./scene/ioc.js";
 import { TOMIController } from "./scene/tomi.controller.js";
@@ -17,7 +18,7 @@ let loadScreen;
 let clock;
 let controls;
 let tomi;
-
+let pointer;
 // setup three js function
 // usage ie:
 // var scene = await setupScene('#app', [id_name_for_canvas], [optional config = {}])
@@ -113,17 +114,9 @@ export const render = (ms = 0) => {
   if (stats) stats.begin();
 
   if (controls) {
-    // const updated = controls.updated;
-    // if (updated) {
-    //   controls.onRender(clock.getDelta());
-    //   if (mainComposer) {
-    //     mainComposer.render();
-    //   } else {
-    //     mainRenderer.render(mainScene, mainCamera);
-    //   }
-    // }
+
     if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
-    controls.update()
+    controls.update();
     if (mainComposer) {
       mainComposer.render();
     } else {
@@ -162,45 +155,67 @@ export const init = async () => {
     mainRenderer = build.renderer;
     mainScene = build.scene;
     mainCamera = build.camera;
+
+    let selects = [];
+    pointer = new Pointer3D(mainCamera, mainScene, mainRenderer.domElement);
+
+    pointer.enabled = true;
     //SceneManager.instance.createLightProbe(mainScene);
 
     // controls = build.controls;
-    const { composer, fxaa } = build.composer;
+    const { composer, fxaa, reflects, outline } = build.composer;
+    if (reflects) {
+      reflects.ground.visible = true;
+      reflects.ground.position.y = 1;
+      mainScene.add(reflects.ground);
+    }
+    pointer.on('hover', (obj) => {
+
+      selects = obj;
+      outline.pass.selectedObjects = pointer.selectedObjects;
+      console.log(obj.userData.id);
+      //console.log('hover', JSON.stringify(obj.parent.userData));
+    });
+    pointer.on('pointermove', (cursor) => {
+      //console.log(cursor)
+    });
+
     mainComposer = composer;
     pe_fxaa = fxaa;
     clock = build.clock;
 
     sceneResize(mainCamera, mainRenderer);
-
+    mainCamera.layers.enableAll();
     loadAsset(mainScene, (progress, total) => {
       fn("loading: " + progress.toString() + "/" + total.toString());
     }).then((assets) => {
       new TOMIController()
-          .load("/models/tomi-anim2.glb")
-          .then((tomicls) => {
-            tomi = tomicls;
-            const delay = _.debounce(() => {
-              tomi.randomClip();
-            }, 4000);
-            //tomi.addEventListener('animationend', (e) => delay())
-            controls = setupControls(mainCamera, mainScene, "#overlay", mainRenderer);
-            mainScene.add(tomi);
+        .load("/models/tomi-anim2.glb")
+        .then((tomicls) => {
+          tomi = tomicls;
+          const delay = _.debounce(() => {
+            tomi.randomClip();
+          }, 4000);
+          //tomi.addEventListener('animationend', (e) => delay())
+          controls = setupControls(
+            mainCamera,
+            mainScene,
+            "#overlay",
+            mainRenderer
+          );
+          mainScene.add(tomi);
 
-            tomi.play("hand.idle");
-            window.loadProgress("Click to start.");
-            document.body.onclick = () => {
-              if (!clock.running) {
-                mainRenderer.shadowMap.needsUpdate = true;
-                clock.start();
-                createjs.Ticker.timingMode = createjs.Ticker.RAF;
-                createjs.Ticker.addEventListener("tick", render);
-              }
-              anime({targets: '#overlay', opacity: 0});
-            }
-          })
-          .catch((er) => console.error(er));
-
-
+          tomi.play("hand.idle");
+          if (!clock.running) {
+            mainRenderer.shadowMap.needsUpdate = true;
+            clock.start();
+            createjs.Ticker.timingMode = createjs.Ticker.RAF;
+            createjs.Ticker.addEventListener("tick", render);
+          }
+          anime({ targets: "#overlay", opacity: 0 });
+          tomi.lookAt(mainCamera.position);
+        })
+        .catch((er) => console.error(er));
     });
   }
 };
@@ -234,19 +249,15 @@ function sceneLoadCompleted() {
     }
   };
 
-
-
   window.loadProgress("Click to start.");
   document.body.onclick = () => {
     if (!clock.running) {
       // tts.speak("hello there.. How are you doing?");
-
-
       //render(0);
-     // playScene();
+      // playScene();
     }
-    anime({targets: '#overlay', opacity: 0});
-  }
+    anime({ targets: "#overlay", opacity: 0 });
+  };
 }
 
 document.body.onload = async (evt) => {

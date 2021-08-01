@@ -180,6 +180,7 @@ export class TOMIController extends THREE.Object3D {
   }
 
   __init(m) {
+    m.layers.set(2);
     const self = this;
     m.traverse((node) => {
       if (node.type === "Bone") {
@@ -190,6 +191,15 @@ export class TOMIController extends THREE.Object3D {
         }
       }
     });
+  }
+
+  lookAt(target, eyeLevel = true) {
+    if (target instanceof THREE.Object3D) {
+      target = target.position.clone();
+    }
+    if (eyeLevel) target.y = 1;
+    super.lookAt(target)
+
   }
 
   async __setupIK(root, ...bones) {
