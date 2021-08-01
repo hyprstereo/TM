@@ -1,4 +1,4 @@
-import { Box3, Box3Helper, Layers, Object3D } from "../build/three.module.js";
+import { Box3, Box3Helper, Layers, Object3D } from "/js/build/three.module.js";
 import { SceneManager, SETTINGS } from "../scene/config.js";
 
 export const PointerStates = {
