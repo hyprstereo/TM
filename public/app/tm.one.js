@@ -1,6 +1,6 @@
-import * as THREE from '../../../../../../../../js/build/three.module.js';
-import { GLTFLoader as GLTFLoader$1 } from '../../../../../../../../js/jsm/loaders/GLTFLoader.js';
-import { GLTFExporter } from '../../../../../../../../js/jsm/exporters/GLTFExporter.js';
+import '../../../../../../../../js/build/three.module.js';
+import '../../../../../../../../js/jsm/loaders/GLTFLoader.js';
+import '../../../../../../../../js/jsm/exporters/GLTFExporter.js';
 
 /**
  * @license
@@ -41748,22 +41748,6 @@ const isMobile = () => {
   return check;
 };
 
-
-function SaveFile( blob, filename ) {
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL( blob );
-  link.download = filename;
-  link.click();
-  return link;
-  // URL.revokeObjectURL( url ); breaks Firefox...
-
-}
-
-function SaveString( text, filename ) {
-  if (typeof text === 'object') text = JSON.stringify(text);
-  return SaveFile( new Blob( [ text ], { type: 'text/plain' } ), filename );
-}
-
 // degrees to radian wrapper`
 const degToRad = (amt) => {
   return MathUtils.degToRad(amt);
@@ -52447,328 +52431,6 @@ CSS3DSprite.prototype.isCSS3DSprite = true;
 new Matrix4();
 new Matrix4();
 
-const Assets = [
-  "/models/ioc/building2.glb",
-  "/models/ioc/tables.glb",
-  "/models/ioc/table_set.glb",
-];
-const props = [
-  {
-    name: "printer",
-    w: 0.345,
-  },
-  {
-    name: "files",
-    w: 0.157969,
-  },
-  {
-    name: "dusbin",
-    w: 0.226306,
-  },
-];
-
-const propsMonitor = {
-  name: "monitor",
-  w: 0.855898,
-};
-const LoadAssets = async (
-  scene,
-  progress = undefined,
-  center = new THREE.Vector3()
-) => {
-  return await new Promise((res, rej) => {
-    const loader = new GLTFLoader$1();
-    let assets = [];
-    let tablePositions = [];
-    let counter = 0;
-    let blue;
-    let shd;
-
-    const files = [Assets[0], Assets[1]]
-      ;
-
-    files.forEach((file, i) => {
-      const name = getName(file);
-      loader.load(
-        file,
-        (asset) => {
-          let model = asset.scene || asset;
-          assets.push(model);
-          if (name == "nulls") {
-            tablePositions = getPositions(model.children[0], scene);
-          } else {
-            // console.log("loaded", name, model);
-            if (model) {
-              if (name.startsWith("table_set") && !SETTINGS.useExportedAssets) {
-                setupTables(model, scene, false);
-              } else {
-                //fixMaterials(model);
-                model.name = name;
-                //ßscene.add(model);
-                if (name.startsWith("table")) {
-                  setupScreens(model, scene);
-                  //fixMaterials(model);
-                } else if (name.startsWith("tomi")) {
-                  new THREE.Box3().setFromObject(model);
-                  //const si = ts.getSize(new THREE.Vector3());
-                  const bg = new THREE.Object3D();
-
-                  //bg.rotation.y = degToRad(180);
-                  model.add(bg);
-                  bg.position.set(0, 0, 0);
-                  //bg.rotation.y = degToRad(180)
-                  model.traverse((m) => {
-                    if (m.type === "Bone") {
-                      const s = new THREE.SkeletonHelper(m);
-                      //  s.layers.set(SceneManager.instance._layers.helpers);
-                      s.position.copy(m.position);
-                      scene.add(s);
-                    } else if (
-                      m.type === "Mesh" &&
-                      (m.name.startsWith("body_28") ||
-                        m.name.startsWith("mesh35_"))
-                    ) {
-                      if (!blue) {
-                        blue = new THREE.MeshLambertMaterial({
-                          map: m.material.map || null,
-                          color: m.material.color || 0xffffff,
-                          alphaMap: m.material.alphaMap,
-                          transparent: true,
-                          // emissive: 0xffffff,
-                          // emissiveIntensity: 1.6,
-                          color: 0xff0000,
-                        });
-                      }
-                      m.material = blue.clone();
-                      const pl = new THREE.PointLight(0x00eeff, 0.1);
-                      m.add(pl);
-                    } else {
-                      if (
-                        m.material &&
-                        m.material.name.startsWith("white_shd")
-                      ) {
-                        console.log(m.material);
-                        if (!shd) {
-                          shd = new THREE.MeshMatCapMaterial({
-                            map: m.material.map,
-                          });
-                        }
-                        m.material = shd;
-                        m.receiveShadow = m.castShadow = true;
-                      }
-                    }
-                  });
-
-                  //bg.scale.set(1.8, 1.8, 1.8)
-                  //const scale = 0.28;
-                  //model.scale.set(scale, scale, scale);
-                } else ;
-              }
-            }
-          }
-          counter++;
-          if (counter > files.length - 1) {
-            res({ assets: assets, positions: tablePositions });
-          }
-        },
-        (p) => {
-          const total = Humanize.fileSize(p.total);
-          const loaded = Humanize.fileSize(p.loaded);
-          if (loaded / total)
-            window.loadProgress(`Loading ${name}: ${loaded} of ${total}`);
-          else window.loadProgress("Assets Loaded");
-        },
-        (err) => {
-          rej(err);
-        }
-      );
-    });
-  });
-};
-
-const setupTables = (model, scene, exportFile = false) => {
-  const tGroup = new THREE.Object3D();
-  tGroup.name = "tables";
-  const size = new THREE.Box3()
-    .setFromObject(model)
-    .getSize(new THREE.Vector3());
-  const rowSet = colTables(model, 6, size.x, 1);
-  rowSet.position.set(1.623, 0, -7);
-
-  const tables = rowTables(scene, rowSet, 6);
-  tGroup.add(tables);
-
-  rowSet.position.set(-14, 0, -7);
-  const tables2 = rowTables(scene, rowSet, 6);
-  tGroup.add(tables2);
-  scene.add(tGroup);
-  if (exportFile) ExportToGLTF("tables.gltf", tGroup);
-
-  return tGroup;
-};
-
-const setupScreens = (tablesSet, scene = undefined) => {
-  //fixMaterials(model, true);
-  const keyboard = new THREE.MeshLambertMaterial({
-    color: 0x59f4f6,
-    emissive: 0x59f4f6,
-    //emissiveIntensity: 1,
-    transparent: true,
-  });
-  const screen = new THREE.MeshLambertMaterial({
-    color: 0xffffff,
-  });
-  const screen2 = screen.clone();
-
-  const lt = new THREE.TextureLoader();
-  lt.load("../../ui/ioc/screen/a15.png", (t) => {
-    t.flipY = false;
-    screen2.map = t;
-  });
-  lt.load("../../ui/ioc/screen/A12.png", (texture) => {
-    texture.flipY = false;
-    screen.map = texture;
-    let counter = 0;
-    const data = {
-      interactive: true,
-      state: 0,
-      id: "",
-    };
-    tablesSet.traverse((node) => {
-
-      if (node.type === "Mesh") {
-
-
-        // const phongMaterial = new THREE.MeshPhongMaterial({
-        //   color: 0xffffff,
-        //   specular: 0x111111,
-        //   shininess: 5,
-        // });
-        // child.material = phongMaterial;
-        // child.receiveShadow = true;
-        // child.castShadow = true;
-        if (node.name.startsWith('Scene0')) {
-          node.userData =  node.userData = { ...data, id: node.name, child: node.children };
-        }
-        if (node.name.startsWith("dus")) {
-          node.material.side = THREE.DoubleSide;
-        } else if (node.material.name.startsWith("screen_monitor")) {
-          node.material = counter % 2 == 0 ? screen : screen2;
-        } else if (node.name.startsWith("keyboard")) {
-          if (!keyboard.map) {
-            keyboard.map = node.material.map;
-            keyboard.alphaMap = node.material.alphaMap;
-          }
-          node.material = keyboard;
-        } else if (node.name.startsWith("table_geo")) ;
-
-        node.castShadow = node.receiveShadow = true;
-      }
-      //node.map.needsUpdate = true;
-
-      counter++;
-    });
-  });
-};
-
-const colTables = (target, count = 6, size = 0, offset = 1) => {
-  const group = new THREE.Object3D();
-  const startX = size * 0.5;
-  for (let i = 0; i < count; i++) {
-    const clone = target.clone();
-    group.add(clone);
-    clone.position.set(startX + size * (i * offset), 0, 0);
-  }
-  return group;
-};
-
-const rowTables = (scene, table, count = 4, offset = 2.5) => {
-  let tables = new THREE.Object3D();
-  for (let i = 0; i < count; i++) {
-    const table2 = table.clone();
-    table2.children.forEach((t) => {
-      naturalize(t, 0.99);
-    });
-    tables.add(table2);
-    table2.position.z += i * offset;
-  }
-  return tables;
-};
-
-const getPositions = (model, scene = undefined) => {
-  console.log(model);
-  let arr = [];
-
-  model.traverse((node) => {
-    if (node.name.startsWith("Light")) {
-      arr.push(node.position);
-    }
-    c++;
-  });
-  return arr;
-};
-
-const getName = (file) => {
-  let index = file.lastIndexOf("/");
-  let res = file.substr(index + 1);
-  res = res.substr(0, res.lastIndexOf("."));
-  return res;
-};
-
-function naturalize(mesh, start = 0.999, width = 100) {
-  let p = _.shuffle(props);
-  p = [p[0], p[1], propsMonitor, p[2]];
-
-  let pos = start;
-  p.forEach((prop, i) => {
-    const obj = mesh.getObjectByName(`${prop.name}_geo_000001`);
-
-    if (obj) {
-      if (prop.name === "monitor") {
-        const keyboard = mesh.getObjectByName(`keyboard_geo_000001`);
-        const mouse = mesh.getObjectByName(`mouse_geo_000001`);
-        obj.position.z += 0.02;
-        obj.add(keyboard);
-        obj.add(mouse);
-        keyboard.position.y = mouse.position.y = 0;
-        if (Math.random() * 5 < 2) {
-          mouse.position.x = mouse.position.x * -1.12;
-        }
-        randomYBetween(obj, -0.02, 0.02);
-      } else {
-        randomYBetween(obj, -0.2, 0.2);
-      }
-      const size = prop.w;
-      obj.position.x = pos - size / 2;
-
-      pos -= size + 0.12;
-    }
-  });
-  const chair = mesh.getObjectByName("chair_geo_000001");
-  randomYBetween(chair);
-}
-
-function randomYBetween(obj, min = -20, max = 20) {
-  const r = randomBetween(-10, 10);
-  obj.rotation.set(0, degToRad(r), 0);
-}
-
-function randomBetween(min, max) {
-  let res = Math.random() * (max - min);
-  res = min + res;
-  return res;
-}
-
-const ExportToGLTF = async (name, ...obj) => {
-  return await new Promise((res, rej) => {
-    const exporter = new GLTFExporter();
-    exporter.parse(obj, (gltf) => {
-      console.log("exported", name, gltf);
-      SaveString(gltf, name);
-    });
-  });
-};
-
 var t1 = new Vector3();
 var t2 = new Vector3();
 var t3 = new Vector3();
@@ -53820,335 +53482,6 @@ if (typeof window !== 'undefined' && _typeof(window.THREE) === 'object') {
   window.THREE.IKHelper = IKHelper;
 }
 
-const SpriteTexture = async (target, src) => {
-  const texture = await new THREE.TextureLoader().load(src);
-  texture.flipY =false;
-  return texture;
-};
-
-class Tomi extends THREE.Object3D {
-  static STATES = {
-    idle: 0,
-    talk: 1,
-    error: 2,
-    joy: 3,
-  };
-  constructor() {
-    super();
-    this._face;
-    this._clips;
-    this._mixer;
-    this._state = Tomi.STATES.idle;
-    return this;
-  }
-
-  load(
-    loader = undefined,
-    src = "../models/tomi-anim.glb",
-    oncomplete = undefined,
-    progress = undefined,
-    error = undefined
-  ) {
-    if (!loader) loader = new GLTFLoader$1();
-
-    loader.lood(src, oncomplete, progress, error);
-  }
-
-  set state(value) {
-    this._state = value;
-  }
-
-  get state() {
-    return this._state;
-  }
-}
-
-const bonesRef = [
-  "Root",
-  "Body_1",
-  "ArmL",
-  "HandL",
-  "ArmR",
-  "HandR",
-  "Hat_Main",
-  "Index_Thumb01L",
-  "Index_Finger01L",
-  "Index_Little01L",
-  "Index_Thumb01R",
-  "Index_Finger01R",
-  "Index_Little01R",
-];
-
-const faceActions = {
-  idle: { x: 0, y: 2 },
-  smile: { x: 3, y: 2 },
-  curious: { x: 0, y: 1 },
-  talk: { x: 0, y: 0 },
-  talk2: { x: 1, y: 3 },
-  joy: { x: 1, y: 2 },
-  dead: { x: 1, y: 1 },
-  angry: { x: 1, y: 0 },
-  sad: { x: 2, y: 2 },
-  duh: { x: 2, y: 1 },
-  annoyed: { x: 2, y: 0 },
-  happy: { x: 1, y: 2 },
-  error: { x: 3, y: 1 },
-  amazed: { x: 0, y: 3 },
-};
-
-class TOMIController extends Object3D {
-  constructor(mesh = undefined) {
-    super();
-    this._mixer = null;
-    this._clips = null;
-    this.mesh = mesh;
-    this.states = {};
-    this._state = "idle";
-    this._face = null;
-    this.bones = {};
-    this.rigs = {};
-    this.useAnimations = true;
-    this._currentClip = null;
-    this._currentAction = null;
-    this._resetPose = false;
-    this._faceTexture = null;
-    this._faceState = 'idle';
-    this._talking = true;
-    this._lastElapse = 0;
-    this._effector = 0;
-    this._faceDim = {
-      col: 4,
-      row: 4,
-    };
-    if (mesh) {
-      this.bind(mesh);
-    }
-  }
-
-  bind(mesh) {
-    this.mesh = mesh;
-    this.add(mesh);
-    const self = this;
-    console.log(mesh);
-    const shield = new MeshPhysicalMaterial({
-      metalness: 0.5,
-      roughness: 0.4,
-    });
-    new TextureLoader().load("/models/texture/e.jpg", (t) => {
-      shield.enMap = t;
-    });
-    mesh.traverse((n) => {
-      if (n.type.endsWith("esh")) {
-        if (n.name == "face") {
-          SpriteTexture(n, "/models/texture/faces.png")
-            .then((texture) => {
-              texture.flipY = false;
-              self._faceTexture = texture;
-              self._faceTexture.flipY = false;
-              self.__faceIndex("talk");
-              const faceMat = new MeshLambertMaterial({
-                map: self._faceTexture,
-                // emissive: 0x58F4F5,
-              });
-              n.material = faceMat;
-            })
-            .catch((e) => console.warn(e));
-        } else {
-          if (n.material.name === "white_shd") {
-            shield.map = n.material.map;
-            n.material = shield;
-          }
-        }
-      }
-    });
-    mesh.position.set(0, 1, 0);
-    this.__init(mesh);
-  }
-
-  async load(
-    src = "./models/tomi-anim2.glb",
-    progress = undefined,
-    compressed = false
-  ) {
-    return new Promise(
-      (res, rej) => {
-        const loader = new GLTFLoader();
-        loader.load(
-          src,
-          (asset) => {
-            const model = asset.scene || asset;
-            if (model) {
-              this.bind(model);
-              if (asset.animations) {
-                this.__loadAnimations(asset);
-              }
-              res(this);
-            } else {
-              rej(`invalid mesh`);
-            }
-          },
-          (prog) => {
-            if (progress) progress(prog);
-          }
-        );
-      },
-      (err) => {
-        rej(err);
-      }
-    );
-  }
-
-  createTarget(position) {
-    const gizmo = new undefined(
-      this.camera,
-      this.renderer.domElement
-    );
-    const target = new Object3D();
-    gizmo.setSize(0.5);
-    gizmo.attach(target);
-    gizmo.target = target;
-    target.position.copy(position);
-
-    this.scene.add(gizmo);
-    this.scene.add(target);
-    this.gizmos.push(gizmo);
-    this.frame = 0;
-
-    gizmo.addEventListener("mouseDown", () => (this.controls.enabled = false));
-    gizmo.addEventListener("mouseUp", () => (this.controls.enabled = true));
-    Tomi.createTarget(tomi.bones["ArmR"]);
-
-    return target;
-  }
-
-  __init(m) {
-    m.layers.set(2);
-    m.traverse((node) => {
-      if (node.type === "Bone") {
-        let arr = bonesRef.join(" ");
-        const name = node.name;
-        if (arr.search(name) > -1) {
-          this.bones[name] = node;
-        }
-      }
-    });
-  }
-
-  lookAt(target, eyeLevel = true) {
-    if (target instanceof Object3D) {
-      target = target.position.clone();
-    }
-    if (eyeLevel) target.y = 1;
-    super.lookAt(target);
-
-  }
-
-  async __setupIK(root, ...bones) {
-    [new IKBallConstraint(80)];
-    let prevIK = root;
-    bones.forEach((b, i) => {
-      const j = new IKJoint(b, contraints);
-      prevIK.add(j);
-      prevIK = j;
-    });
-  }
-
-  async __loadAnimations(scene) {
-    console.log(scene.animations);
-    const mixer = new AnimationMixer(this.bones["Root"]);
-    this._clips = scene.animations;
-    const self = this;
-    mixer.addEventListener("finished", (e) => {
-      if (this._currentAction) {
-        this._currentAction.fadeOut(1.2);
-      }
-      self.dispatchEvent({ type: "animationend" });
-    });
-    mixer.addEventListener("loop", (e) => {
-      self.dispatchEvent({ type: "animationend" });
-    });
-    this._mixer = mixer;
-  }
-
-  randomClip() {
-    if (this._clips.length < 1)
-    return
-    const animationId = Math.min(
-      this._clips.length - 1,
-      Math.round(Math.random() * this._clips.length)
-    );
-    console.log(animationId);
-    let name = this._clips[animationId].name;
-    if (parseInt(name)) name = "hand.idle";
-    this.play(name);
-  }
-
-  play(clipName, loop = LoopPingPong, repeat = 10) {
-    const clip = AnimationClip.findByName(this._clips, clipName);
-    console.log("play", clipName);
-    if (clip) {
-      const action = this._mixer.clipAction(clip);
-      action.timeScale = clipName === "hand.idle" ? 1 : 1.5;
-
-      //action.repetitions = repeat;
-      if (
-        this._currentAction &&
-        this._currentAction.getClip().name !== clipName
-      ) {
-        const ca = this._currentAction;
-        //ca.stop();
-        action.loop = loop;
-        action.play();
-        action.fadeIn(1.2);
-        ca.fadeOut(1.2);
-
-        setTimeout((_) => ca.stop(), 2000);
-      } else {
-        action.loop = loop;
-        action.play();
-      }
-      this._currentClip = clip;
-      this._currentAction = action;
-    }
-  }
-
-  update(delta, elapse = 0) {
-    if (this._currentAction) this._mixer.update(delta);
-
-    if (this.mesh) {
-      this.mesh.position.y = 1 + Math.sin(0.3 + elapse * (3 + this._effector)) * 0.1;
-    }
-
-    const d = (elapse - this._lastElapse) ;
-    //console.log(d);
-    const self = this;
-    if (d >= .25) {
-      this._lastElapse = elapse;
-      const state = this._faceState;
-      self.__faceIndex(state);
-      if (this._talking) {
-        const r = Math.random() * 5;
-        if (r < 1) this._faceState = 'smile';
-        else if (r >= 1 && r < 3) this._faceState = 'joy';
-        else this._faceState = (state == 'talk') ? 'talk2' : 'talk';
-      }
-    }
-  }
-
-  __faceIndex(actions = "idle") {
-    if (typeof actions === "string") actions = faceActions[actions];
-    let x = actions.x;
-    let y = actions.y;
-    y = Math.min(y, this._faceDim.row);
-    x = Math.min(x, this._faceDim.col);
-    const texture = this._faceTexture;
-    texture.repeat.x = 1 / this._faceDim.col;
-    texture.repeat.y = 1 / this._faceDim.row;
-    texture.offset.x = actions.x / this._faceDim.col;
-    texture.offset.y = actions.y / this._faceDim.row;
-  }
-}
-
 let loadScreen;
 // setup three js function
 // usage ie:
@@ -54177,6 +53510,8 @@ class SceneManagerImpl extends Emitter {
     this.fxaa;
     this.renderTargets;
     this.tomi;
+    this.assets = {};
+    this._loader = new GLTFLoader();
   }
 
   async setup(target = "#app", props = undefined) {
@@ -54199,11 +53534,6 @@ class SceneManagerImpl extends Emitter {
       console.warn("setupGLError");
     }
     this.scene = build.scene;
-
-    // setupLightings(this.scene, 1.9, 1.2, 1024)
-    // this.composer = postEffects(this.renderer, this.scene, this.camera, undefined, );
-    // this.fxaa = build.composer.fxaa;
-
     this.controls = setupControls(
       this.camera,
       this.scene,
@@ -54212,6 +53542,38 @@ class SceneManagerImpl extends Emitter {
     );
 
     return build;
+  }
+
+  async loadAssets(src) {
+    const sources = src;
+    return await new Promise((res, rej) => {
+      let counter = 0;
+      let arr = [];
+      const loader = this._loader;
+      const self = this;
+      const loadModel = (s) => {
+        // arr[src] =  {src: src, scene: null, id: i};
+        self.emit("loadbegin", s);
+        loader.load(s, loadComplete, loadProgress, loadError);
+      };
+
+      const loadComplete = (event) => {
+        //arr[sources[counter]] = event;
+        self.emit("loadcomplete", event);
+        arr.push(event);
+        if (counter < sources.length-1) {
+          counter++;
+          loadModel(sources[counter]);
+        } else {
+          self.emit("loadfinished", arr);
+        }
+      };
+      const loadProgress = (event) => this.emit("loadprogress", event);
+      const loadError = (event) => this.emit("loaderror", event);
+
+
+      loadModel(src[counter]);
+    });
   }
 
   play() {
@@ -54329,51 +53691,49 @@ const SceneManager = new SceneManagerImpl();
  *
  */
 
-const assetManifest = {
-  models: ["/assets/models/building2.glb", "/assets/models/tables.glb"],
+const Assets = {
+  models: [
+    "/models/ioc/building2.glb",
+    "/models/ioc/tables.glb",
+    "/models/tomi-anim3.glb",
+  ],
   textures: ["/"],
 };
 
 const init = async () => {
-  const { screen, fn } = createLoadScreen();
-  window.loadProgress = fn;
+  // configure UI
+  //return await new Promise((res, rej) => {
+    const { screen, fn } = createLoadScreen();
+    window.loadProgress = fn;
 
-  const created = await SceneManager.setup("#app").then((r) => r);
-  console.log("created", created);
-  if (created) {
-    LoadAssets(SceneManager.scene).then((assets) => {
-      console.log(assets);
-      SceneManager.tomi = new TOMIController();
-      SceneManager.tomi.load(
-        "/models/tomi-anim2.glb",
-        (tomiCls) => {
-          console.log(tomiCls);
-          //TM.SceneManager.tomi = tomiCls;
-          SceneManager.scene.add(SceneManager.tomi);
+    const build = await SceneManager.setup("#app").then((r) => r);
+    console.log(build);
 
-
-          SceneManager.tomi.lookAt(SceneManager.camera.position);
-          anime({
-            targets: "#overlay",
-            opacity: 0,
-          });
-          SceneManager.play();
-          SceneManager.tomi.randomClip();
-        }
-
-      );
-      SceneManager.on('render', (delta, elapse) => {
-        console.log('render');
-        SceneManager.controls.update();
-        SceneManager.tomi.update(delta, elapse);
-        //TM.SceneManager.composer.render();
-      });
+    SceneManager.on("loadbegin", (e) => console.log("begin", e));
+    SceneManager.on("loadprogress", (e) => console.log("progress", e));
+    SceneManager.on("loadcomplete", (e) => {
+      const model = e.scene || e;
+      console.log("complete", model);
+      SceneManager.scene.add(model);
     });
-  }
+
+    SceneManager.on("loadfinished", () => {
+      alert("compss");
+      SceneManager.on("render", (delta, elapsed) => {
+
+      });
+      SceneManager.play();
+    });
+    SceneManager.loadAssets(Assets.models)
+    .then((completed) => {
+      console.log("ya");
+      res(completed);
+    });
+  //});
 };
 
 document.body.onload = async (evt) => {
   await init();
 };
 
-export { assetManifest };
+export { Assets };

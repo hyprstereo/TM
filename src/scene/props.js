@@ -1,7 +1,7 @@
 import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
 import * as THREE from "/js/build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
-import { reflects, SETTINGS } from "../scene/config.js";
+import { reflects, SETTINGS } from "./config.js";
 import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
@@ -124,9 +124,6 @@ export const LoadAssets = async (
                     }
                   });
 
-                  //bg.scale.set(1.8, 1.8, 1.8)
-                  //const scale = 0.28;
-                  //model.scale.set(scale, scale, scale);
                 } else {
                   // SceneManager.instance.createHelper(model);
                 }

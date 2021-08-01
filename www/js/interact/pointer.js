@@ -1,13 +1,8 @@
 import {
-  Box3,
-  Box3Helper,
-  Layers,
-  Object3D,
   Raycaster,
   Vector2,
 } from "/js/build/three.module.js";
 import Emitter from "/js/events/emitter.js";
-import { InteractiveObject, PointerStates } from "./interactiveobject.js";
 
 export class Pointer3D extends Emitter {
   constructor(camera, scene, context, layerId = 6) {

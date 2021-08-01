@@ -2,6 +2,7 @@ import * as THREE from "../build/three.module.js";
 import { setupControls, setupScene } from "../scene/config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "../scene/config.js";
+import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
 class SceneManagerImpl extends Emitter {
   constructor() {
     super();
@@ -13,6 +14,8 @@ class SceneManagerImpl extends Emitter {
     this.fxaa;
     this.renderTargets;
     this.tomi;
+    this.assets = {};
+    this._loader = new GLTFLoader();
   }
 
   async setup(target = "#app", props = undefined) {
@@ -35,11 +38,6 @@ class SceneManagerImpl extends Emitter {
       console.warn("setupGLError");
     }
     this.scene = build.scene;
-
-    // setupLightings(this.scene, 1.9, 1.2, 1024)
-    // this.composer = postEffects(this.renderer, this.scene, this.camera, undefined, );
-    // this.fxaa = build.composer.fxaa;
-
     this.controls = setupControls(
       this.camera,
       this.scene,
@@ -48,6 +46,38 @@ class SceneManagerImpl extends Emitter {
     );
 
     return build;
+  }
+
+  async loadAssets(src) {
+    const sources = src;
+    return await new Promise((res, rej) => {
+      let counter = 0;
+      let arr = [];
+      const loader = this._loader;
+      const self = this;
+      const loadModel = (s) => {
+        // arr[src] =  {src: src, scene: null, id: i};
+        self.emit("loadbegin", s);
+        loader.load(s, loadComplete, loadProgress, loadError);
+      };
+
+      const loadComplete = (event) => {
+        //arr[sources[counter]] = event;
+        self.emit("loadcomplete", event);
+        arr.push(event)
+        if (counter < sources.length-1) {
+          counter++;
+          loadModel(sources[counter]);
+        } else {
+          self.emit("loadfinished", arr);
+        }
+      };
+      const loadProgress = (event) => this.emit("loadprogress", event);
+      const loadError = (event) => this.emit("loaderror", event);
+
+
+      loadModel(src[counter]);
+    });
   }
 
   play() {
@@ -62,26 +92,15 @@ class SceneManagerImpl extends Emitter {
   }
 
   _onRender(ms) {
-    this.emit("render", this.clock.getDelta(), this.clock.getElapsedTime());
+    this.emit("beforeRender", this.clock.getDelta(), this.clock.getElapsedTime());
 
-    //this.controls.update();
-    //if (this.tomi)
+    if (this.controls) this.controls.update();
 
-    //this.composer.render();
-    // export const render = (ms = 0) => {
-    //   if (stats) stats.begin();
-
-    //   if (controls) {
-
-    //     if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
-    //     controls.update();
-    if (SceneManager.composer) {
-      SceneManager.composer.render();
+    if (this.composer) {
+      this.composer.render();
     }
-    // } else {
-    //   mainRenderer.render(mainScene, mainCamera);
-    // }
-    //   }
+
+    this.emit('afterRender', this.clock.getDelta(), this.clock.getElapsedTime());
   }
 }
 
