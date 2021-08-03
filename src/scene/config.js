@@ -192,7 +192,7 @@ function getLoader(manager, type = "gltf") {
 export const SETTINGS = {
   physicallyCorrectLights: true,
   ambient: 1.8,
-  sun: 1.2,
+  sun: 1.8,
   shadow: true,
   bloom: true,
   ao: false,

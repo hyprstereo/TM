@@ -150,6 +150,7 @@ export const LoadAssets = async (
   });
 };
 
+
 export const loadFrame = (url) => {
   const iframe = document.createElement("iframe");
   iframe.style.width = `100%`;
@@ -184,7 +185,7 @@ const setupTables = (model, scene, exportFile = false) => {
   return tGroup;
 };
 
-const setupScreens = (tablesSet, scene = undefined) => {
+export const setupScreens = (tablesSet, scene = undefined) => {
   const iTables = [];
   //fixMaterials(model, true);
   const keyboard = new THREE.MeshLambertMaterial({
@@ -246,8 +247,10 @@ const setupScreens = (tablesSet, scene = undefined) => {
 
 
         }
-
+        
         node.castShadow = node.receiveShadow = true;
+      } else if (node.type === 'Material'){
+        //node.map.needsUpdate = true;
       }
       //node.map.needsUpdate = true;
 
@@ -351,6 +354,40 @@ const fixMaterials = (asset, shadow = false) => {
     }
   });
 };
+
+export function loadTextures(...src) {
+  return new Promise((res,rej) =>{
+    const textures = [];
+    const loader = new THREE.TextureLoader()
+    let i = 0;
+    while(i < src.length) {
+      const s = src[i];
+      loader.load(s, (txt) =>{
+        textures.push(txt);
+       if (textures.length == src.length) {
+         res(textures);
+         //break
+       }
+       i++;
+      });
+     // i++;
+    }
+  })
+  
+}
+
+export function extracts(model, mesh = true, mats = true) {
+  const meshes = [];
+  const materials = [];
+  model.traverse((node) => {
+    if (mesh && node.type == 'Mesh') {
+      meshes.push(node);
+    } else if(node.type == 'Material') {
+      console.log('mat', node.name, node.map);
+      materials.push(node);
+    }
+  })
+}
 
 function naturalize(mesh, start = 0.999, width = 100) {
   let p = _.shuffle(props);

@@ -9,7 +9,7 @@ export default {
 
 
   input: "./src/app.js",
-  excludes: "./src/build/**",
+  external: '/js/build',
   output: [
     {
       file: "./public/app/tm.one.js",

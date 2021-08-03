@@ -26,6 +26,7 @@
     "encodeurl": "^1.0.2",
     "engine.io": "^4.1.1",
     "engine.io-parser": "^4.0.2",
+    "esbuild": "^0.12.17",
     "escape-html": "^1.0.3",
     "etag": "^1.8.1",
     "express": "^4.17.1",
@@ -71,7 +72,7 @@
   },
   "devependencies": {},
   "scripts": {
-    "serve" : "rollup -c && node index.js",
+    "serve": "npx rollup -c && node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

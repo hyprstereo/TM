@@ -1,5 +1,5 @@
 import * as THREE from "../build/three.module.js";
-import { setupControls, setupScene } from "../scene/config.js";
+import { SETTINGS, setupControls, setupScene } from "../scene/config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "../scene/config.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
@@ -24,7 +24,7 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
-
+      
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
         this.renderer,
@@ -48,11 +48,15 @@ class SceneManagerImpl extends Emitter {
     return build;
   }
 
+
+
   async loadAssets(src) {
     const sources = src;
     return await new Promise((res, rej) => {
       let counter = 0;
       let arr = [];
+      let name = src[counter];
+
       const loader = this._loader;
       const self = this;
       const loadModel = (s) => {
@@ -62,6 +66,7 @@ class SceneManagerImpl extends Emitter {
       };
 
       const loadComplete = (event) => {
+
         //arr[sources[counter]] = event;
         self.emit("loadcomplete", event);
         arr.push(event)
@@ -82,6 +87,7 @@ class SceneManagerImpl extends Emitter {
 
   play() {
     this.clock.start();
+    this.renderer.shadowMap.needsUpdate = true;
     createjs.Ticker.timingMode = createjs.Ticker.RAF;
     createjs.Ticker.addEventListener("tick", this._onRender.bind(this));
   }
@@ -95,9 +101,11 @@ class SceneManagerImpl extends Emitter {
     this.emit("beforeRender", this.clock.getDelta(), this.clock.getElapsedTime());
 
     if (this.controls) this.controls.update();
-
+    if (this.tomi) this.tomi.update(this.clock.getDelta(), this.clock.getElapsedTime(), ms)
     if (this.composer) {
       this.composer.render();
+    } else {
+     // this.renderer.render(this.scene, this.camera)
     }
 
     this.emit('afterRender', this.clock.getDelta(), this.clock.getElapsedTime());
@@ -124,7 +132,7 @@ const setupWebGL = async (target = "#app", props = undefined) => {
   return build;
 };
 
-const setupLightings = (scene, sun = 1.8, ambient = 1.2, shadow = 1024) => {
+const setupLightings = (scene, sun = 1.8, ambient = 1.8, shadow = 1024) => {
   const light = new THREE.AmbientLight(0xffffff, ambient);
   createHelper(light, () => new THREE.PointLightHelper(light, 0.2, 0xffff00));
   light.position.set(0, 5, 2);

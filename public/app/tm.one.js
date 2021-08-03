@@ -1,5 +1,5 @@
-import '../../../../../../../../js/build/three.module.js';
-import '../../../../../../../../js/jsm/loaders/GLTFLoader.js';
+import * as THREE from '../../../../../../../../js/build/three.module.js';
+import { GLTFLoader as GLTFLoader$1 } from '../../../../../../../../js/jsm/loaders/GLTFLoader.js';
 import '../../../../../../../../js/jsm/exporters/GLTFExporter.js';
 
 /**
@@ -51862,7 +51862,8 @@ class panoControl extends EventDispatcher {
   }
 
   lookAt(target) {
-    this.camera.lookAt(target.position);
+    if (this.orbitMode) this.c.target = target.position||target;
+    else this.camera.lookAt(target.position);
   }
 
   onRender(ms = 0) {
@@ -52155,7 +52156,7 @@ class SceneManager$1 extends Emitter {
 const SETTINGS = {
   physicallyCorrectLights: true,
   ambient: 1.8,
-  sun: 1.2,
+  sun: 1.8,
   shadow: true,
   bloom: true,
   ao: false,
@@ -52430,6 +52431,70 @@ CSS3DSprite.prototype.isCSS3DSprite = true;
 
 new Matrix4();
 new Matrix4();
+
+const setupScreens = (tablesSet, scene = undefined) => {
+  //fixMaterials(model, true);
+  const keyboard = new THREE.MeshLambertMaterial({
+    color: 0x59f4f6,
+    emissive: 0x59f4f6,
+    //emissiveIntensity: 1,
+    transparent: true,
+  });
+  const screen = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
+  });
+  const screen2 = screen.clone();
+
+  const lt = new THREE.TextureLoader();
+  lt.load("../../ui/ioc/screen/a15.png", (t) => {
+    t.flipY = false;
+    screen2.map = t;
+  });
+  lt.load("../../ui/ioc/screen/A12.png", (texture) => {
+    texture.flipY = false;
+    screen.map = texture;
+    let counter = 0;
+    const data = {
+      interactive: true,
+      state: 0,
+      id: "",
+    };
+    tablesSet.traverse((node) => {
+
+      if (node.type === "Mesh") {
+
+
+        // const phongMaterial = new THREE.MeshPhongMaterial({
+        //   color: 0xffffff,
+        //   specular: 0x111111,
+        //   shininess: 5,
+        // });
+        // child.material = phongMaterial;
+        // child.receiveShadow = true;
+        // child.castShadow = true;
+        if (node.name.startsWith('Scene0')) {
+          node.userData =  node.userData = { ...data, id: node.name, child: node.children };
+        }
+        if (node.name.startsWith("dus")) {
+          node.material.side = THREE.DoubleSide;
+        } else if (node.material.name.startsWith("screen_monitor")) {
+          node.material = counter % 2 == 0 ? screen : screen2;
+        } else if (node.name.startsWith("keyboard")) {
+          if (!keyboard.map) {
+            keyboard.map = node.material.map;
+            keyboard.alphaMap = node.material.alphaMap;
+          }
+          node.material = keyboard;
+        } else if (node.name.startsWith("table_geo")) ;
+        
+        node.castShadow = node.receiveShadow = true;
+      } else if (node.type === 'Material');
+      //node.map.needsUpdate = true;
+
+      counter++;
+    });
+  });
+};
 
 var t1 = new Vector3();
 var t2 = new Vector3();
@@ -53482,6 +53547,424 @@ if (typeof window !== 'undefined' && _typeof(window.THREE) === 'object') {
   window.THREE.IKHelper = IKHelper;
 }
 
+const SpriteTexture = async (target, src) => {
+  const texture = await new THREE.TextureLoader().load(src);
+  texture.flipY =false;
+  return texture;
+};
+
+class Tomi extends THREE.Object3D {
+  static STATES = {
+    idle: 0,
+    talk: 1,
+    error: 2,
+    joy: 3,
+  };
+  constructor() {
+    super();
+    this._face;
+    this._clips;
+    this._mixer;
+    this._state = Tomi.STATES.idle;
+    return this;
+  }
+
+  load(
+    loader = undefined,
+    src = "../models/tomi-anim.glb",
+    oncomplete = undefined,
+    progress = undefined,
+    error = undefined
+  ) {
+    if (!loader) loader = new GLTFLoader$1();
+
+    loader.lood(src, oncomplete, progress, error);
+  }
+
+  set state(value) {
+    this._state = value;
+  }
+
+  get state() {
+    return this._state;
+  }
+}
+
+class TOMIController extends Object3D {
+  constructor(mesh = undefined, scale = 1) {
+    super();
+    this._mixer = null;
+    this._clips = null;
+    this._actionSet = {};
+    this.mesh = mesh.scene || mesh;
+    this.states = {};
+    this._state = "idle";
+    this._face = null;
+    this.bones = {};
+    this.rigs = {};
+    this.useAnimations = true;
+    this._currentClip = null;
+    this._currentAction = null;
+    this._resetPose = false;
+    this._faceTexture = null;
+    this._faceState = 'idle';
+    this._talking = true;
+    this._lastElapse = 0;
+    this._effector = 0;
+    this._faceDim = {
+      col: 4,
+      row: 4,
+    };
+    if (mesh) {
+      this.bind(this.mesh, scale);
+      if (mesh.animations) {
+        this.__loadAnimations(mesh);
+      }
+    }
+  }
+
+
+  bind(mesh, scale = 1) {
+    // this.mesh = mesh;
+    const group = new Object3D();
+    group.add(mesh);
+    console.log(mesh.scale);
+    //group.rotation.set(degToRad(-90), degToRad(0), degToRad(-90))
+    this.add(group);
+    // mesh.scale.set(scale, scale, scale);
+    const self = this;
+
+    const shield = new MeshPhysicalMaterial({
+      metalness: 0.5,
+      roughness: 0.4,
+    });
+
+    // const textures =[];
+    // new THREE.TextureLoader().load("/models/tomi/body.jpg", (t) => {
+    //   textures.push(t)
+    // });
+    // new THREE.TextureLoader().load("/models/tomi/shield.jpg", (t) => {
+    //   textures.push(t)
+    // });
+
+    // const body = new THREE.MeshPhysicalMaterial({
+    //   map:textures[0]
+    // });
+
+    const blue = new MeshBasicMaterial({
+      transparent: true,
+      opacity: 0.5,
+      emissive: 0xffffff,
+    });
+
+    new TextureLoader().load("/models/texture/e.jpg", (t) => {
+      shield.envMap = t;
+    });
+
+
+    const eye = new MeshLambertMaterial({
+      //map: self._faceTexture,
+
+    });
+
+    //dsconsole.log("yyyyy",textures);
+    mesh.traverse((n) => {
+      if (n.type.endsWith("esh")) {
+        if (n.name == "facexxx" || n.name == "xxxbody_15") {
+          SpriteTexture(n, "/models/texture/faces.png")
+            .then((texture) => {
+              texture.flipY = false;
+              self._faceTexture = texture;
+              self._faceTexture.flipY = false;
+              self.__faceIndex("talk");
+              const faceMat = new MeshLambertMaterial({
+                map: self._faceTexture,
+                // emissive: 0x58F4F5,
+              });
+              n.material = faceMat;
+            })
+            .catch((e) => console.warn(e));
+        } else {
+
+          //sconsole.log('mat', n.material.name, n.material.map);
+          if (n.material.name === "Material #63") {
+            shield.map = n.material.map;
+            n.material = shield;
+          } else if (n.material.name === "Material #10") {
+            blue.map = n.material.map;
+            blue.alphaMap = n.material.alphaMap;
+
+            n.material = blue;
+          } else if (n.material.name.startsWith('eye')) {
+
+            // n.material.emissive = 0x58F4F5;
+            eye.map = n.material.map;
+            eye.alphaMap = n.material.alphaMap;
+            n.material = eye;
+            //n.material.transparent = true;
+            //n.material.emissive = 0x58F4F5;
+          } else {
+            n.material.side = DoubleSide;
+            n.material.transparent = true;
+          }
+          // } else if(n.material.name === 'Material #63') {
+          //   n.material = body
+          //   n.material.map = textures[0];
+          // }  else if(n.material.name === 'Material #10') {
+          //   n.material = blue;
+          // }
+        }
+      }
+    });
+    mesh.position.set(0, 1, 0);
+    this.__init(mesh);
+    window.addEventListener('keydown', (e) => {
+
+      if (e.key == 't') this.randomClip();
+    });
+  }
+
+  applyTextures() {
+
+
+  }
+
+  async load(
+    src = "./models/tomi-anim2.glb",
+    progress = undefined,
+    compressed = false
+  ) {
+    return new Promise(
+      (res, rej) => {
+        const loader = new GLTFLoader();
+        loader.load(
+          src,
+          (asset) => {
+            const model = asset.scene || asset;
+            if (model) {
+              this.bind(model);
+              if (asset.animations) {
+                this.__loadAnimations(asset);
+              }
+              res(this);
+            } else {
+              rej(`invalid mesh`);
+            }
+          },
+          (prog) => {
+            if (progress) progress(prog);
+          }
+        );
+      },
+      (err) => {
+        rej(err);
+      }
+    );
+  }
+
+  createTarget(position) {
+    const gizmo = new undefined(
+      this.camera,
+      this.renderer.domElement
+    );
+    const target = new Object3D();
+    gizmo.setSize(0.5);
+    gizmo.attach(target);
+    gizmo.target = target;
+    target.position.copy(position);
+
+    this.scene.add(gizmo);
+    this.scene.add(target);
+    this.gizmos.push(gizmo);
+    this.frame = 0;
+
+    gizmo.addEventListener("mouseDown", () => (this.controls.enabled = false));
+    gizmo.addEventListener("mouseUp", () => (this.controls.enabled = true));
+    Tomi.createTarget(tomi.bones["ArmR"]);
+
+    return target;
+  }
+
+  __init(m) {
+    m.layers.set(2);
+    // m.traverse((node) => {
+    //   if (node.type === "Bone") {
+    //     let arr = bonesRef.join(" ");
+    //     const name = node.name;
+    //     if (arr.search(name) > -1) {
+    //       this.bones[name] = node;
+    //     }
+    //   }
+    // });
+  }
+
+  lookAt(target, eyeLevel = true) {
+    if (target instanceof Object3D) {
+      target = target.position.clone();
+    }
+    if (eyeLevel) target.y = 1;
+    super.lookAt(target);
+
+  }
+
+  async __setupIK(root, ...bones) {
+    [new IKBallConstraint(80)];
+    let prevIK = root;
+    bones.forEach((b, i) => {
+      const j = new IKJoint(b, contraints);
+      prevIK.add(j);
+      prevIK = j;
+    });
+  }
+
+  async __loadAnimations(scene, onlyClips = false) {
+    console.log(scene.animations);
+    if (onlyClips) {
+
+      const clip = scene.animations[0];
+      clip.name += this._clips.length;
+      clip.tracks.splice(2, 2);
+      // const tracks = [];
+      // for(let i = 0; i < clip.tracks.length; i++) {
+      //   if (clip.tracks[i].name !== 'char_ctrl.quaternion' && clip.tracks[i].name !== 'char_ctrl.scale') {
+      //     tracks.push(clip.tracks[i]);
+      //   }
+      // }
+      // clip.tracks = tracks;
+      this._clips.push(clip);
+      return
+    }
+
+    const mixer = new AnimationMixer(this.mesh);
+
+    mixer.timeScale = 0.5;
+    this._clips = scene.animations;
+    const self = this;
+    mixer.addEventListener("finished", (e) => {
+      if (this._currentAction) {
+        this._currentAction.fadeOut(1.2);
+      }
+      self.dispatchEvent({ type: "animationend" });
+    });
+    mixer.addEventListener("loop", (e) => {
+      self.dispatchEvent({ type: "animationend" });
+    });
+    this._mixer = mixer;
+  }
+
+  randomClip() {
+    if (this._clips.length < 1)
+      return
+    const animationId = Math.min(
+      this._clips.length - 1,
+      Math.round(Math.random() * this._clips.length)
+    );
+    console.log(animationId);
+    let name = this._clips[animationId].name;
+    if (parseInt(name)) name = "hand.idle";
+    this.play(name);
+  }
+
+  play(clipName, loop = LoopPingPong, repeat = 10) {
+    const clip = AnimationClip.findByName(this._clips, clipName);
+    this._mixer.timeScale = 0.3;
+    console.log("play", clipName);
+    if (clip) {
+      const action = this._mixer.clipAction(clip);
+
+      //  action.timeScale = clipName === "hand.idle" ? 1 : 1.5;
+
+      //action.repetitions = repeat;
+      if (
+        this._currentAction &&
+        this._currentAction.getClip().name !== clipName
+      ) {
+        const ca = this._currentAction;
+        //ca.stop();
+        action.loop = loop;
+        action.play();
+        action.fadeIn(1.2);
+        ca.fadeOut(1.2);
+
+        setTimeout((_) => ca.stop(), 2000);
+      } else {
+        action.loop = loop;
+        action.play();
+      }
+      this._currentClip = clip;
+      this._currentAction = action;
+    }
+
+
+  }
+
+  update(delta, elapse = 0, md = undefined) {
+    // if (this._currentAction)
+    //console.log(delta, elapse, md.time)
+
+
+    if (this.mesh) ;
+
+
+    const d = (elapse - this._lastElapse) * this._mixer.timeScale;
+    //console.log(d);
+    this._mixer.update(d);
+    const self = this;
+    if (d >= .25) {
+
+      this._lastElapse = elapse;
+      const state = this._faceState;
+      self.__faceIndex(state);
+      if (this._talking) {
+        const r = Math.random() * 5;
+        if (r < 1) this._faceState = 'smile';
+        else if (r >= 1 && r < 3) this._faceState = 'joy';
+        else this._faceState = (state == 'talk') ? 'talk2' : 'talk';
+      }
+    }
+  }
+
+  async loadTracks(src) {
+    const self = this;
+    return new Promise((res, rej) => {
+      fetch(src)
+        .then(r => {
+          const data = r.json();
+          if (data) {
+            // this._clips = [];
+            this._mixer.timeScale = data.timeScale;
+            const loader = new GLTFLoader();
+
+            let i = 0;
+            while (i < data.clips.length) {
+              const c = data.clips[i];
+              loader.load(c, (scene) => {
+                console.log(scene);
+                if (scene.animations.length < 1) {
+                  i++;
+                } else {
+                  self.__loadAnimations(scene, true);
+                 
+                  if (self._clips.length > data.clips.length - 1) {
+                    res(self._clips);
+                  }
+                }
+                i++;
+              });
+            }
+          }
+        })
+        .catch(e => rej(e));
+
+    })
+
+  }
+
+  __faceIndex(actions = "idle") {
+    return
+  }
+}
+
 let loadScreen;
 // setup three js function
 // usage ie:
@@ -53520,7 +54003,7 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
-
+      
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
         this.renderer,
@@ -53544,11 +54027,15 @@ class SceneManagerImpl extends Emitter {
     return build;
   }
 
+
+
   async loadAssets(src) {
     const sources = src;
     return await new Promise((res, rej) => {
       let counter = 0;
       let arr = [];
+      src[counter];
+
       const loader = this._loader;
       const self = this;
       const loadModel = (s) => {
@@ -53558,6 +54045,7 @@ class SceneManagerImpl extends Emitter {
       };
 
       const loadComplete = (event) => {
+
         //arr[sources[counter]] = event;
         self.emit("loadcomplete", event);
         arr.push(event);
@@ -53578,6 +54066,7 @@ class SceneManagerImpl extends Emitter {
 
   play() {
     this.clock.start();
+    this.renderer.shadowMap.needsUpdate = true;
     createjs.Ticker.timingMode = createjs.Ticker.RAF;
     createjs.Ticker.addEventListener("tick", this._onRender.bind(this));
   }
@@ -53588,26 +54077,15 @@ class SceneManagerImpl extends Emitter {
   }
 
   _onRender(ms) {
-    this.emit("render", this.clock.getDelta(), this.clock.getElapsedTime());
+    this.emit("beforeRender", this.clock.getDelta(), this.clock.getElapsedTime());
 
-    //this.controls.update();
-    //if (this.tomi)
-
-    //this.composer.render();
-    // export const render = (ms = 0) => {
-    //   if (stats) stats.begin();
-
-    //   if (controls) {
-
-    //     if (tomi.update) tomi.update(clock.getDelta(), clock.getElapsedTime());
-    //     controls.update();
-    if (SceneManager.composer) {
-      SceneManager.composer.render();
+    if (this.controls) this.controls.update();
+    if (this.tomi) this.tomi.update(this.clock.getDelta(), this.clock.getElapsedTime(), ms);
+    if (this.composer) {
+      this.composer.render();
     }
-    // } else {
-    //   mainRenderer.render(mainScene, mainCamera);
-    // }
-    //   }
+
+    this.emit('afterRender', this.clock.getDelta(), this.clock.getElapsedTime());
   }
 }
 
@@ -53631,7 +54109,7 @@ const setupWebGL = async (target = "#app", props = undefined) => {
   return build;
 };
 
-const setupLightings = (scene, sun = 1.8, ambient = 1.2, shadow = 1024) => {
+const setupLightings = (scene, sun = 1.8, ambient = 1.8, shadow = 1024) => {
   const light = new AmbientLight(0xffffff, ambient);
   createHelper(light, () => new PointLightHelper(light, 0.2, 0xffff00));
   light.position.set(0, 5, 2);
@@ -53691,11 +54169,16 @@ const SceneManager = new SceneManagerImpl();
  *
  */
 
-const Assets = {
+const Assets = { 
   models: [
     "/models/ioc/building2.glb",
     "/models/ioc/tables.glb",
-    "/models/tomi-anim3.glb",
+    "/models/tom.gltf",
+    "/models/tomi/ioc-intro.gltf",
+    "/models/tomi/ioc-agility.gltf",
+    "/models/tomi/ioc-competitive.gltf",
+    "/models/tomi/ioc-cost.gltf",
+    "/models/tomi/ioc-enablement.gltf"
   ],
   textures: ["/"],
 };
@@ -53703,30 +54186,60 @@ const Assets = {
 const init = async () => {
   // configure UI
   //return await new Promise((res, rej) => {
-    const { screen, fn } = createLoadScreen();
-    window.loadProgress = fn;
+  const { screen, fn } = createLoadScreen();
+  window.loadProgress = fn;
 
-    const build = await SceneManager.setup("#app").then((r) => r);
-    console.log(build);
+  const build = await SceneManager
+    .setup("#app").then((r) => r);
 
-    SceneManager.on("loadbegin", (e) => console.log("begin", e));
-    SceneManager.on("loadprogress", (e) => console.log("progress", e));
-    SceneManager.on("loadcomplete", (e) => {
-      const model = e.scene || e;
-      console.log("complete", model);
+  console.log(build);
+  let id = 0;
+  SceneManager.on("loadbegin", (e) => console.log("begin", e));
+  SceneManager.on("loadprogress", (e) => console.log("progress", e));
+  SceneManager.on("loadcomplete", (e) => {
+    let model = e.scene || e;
+    if (id == 1) {
       SceneManager.scene.add(model);
-    });
-
-    SceneManager.on("loadfinished", () => {
-      alert("compss");
-      SceneManager.on("render", (delta, elapsed) => {
-
+      setupScreens(model, SceneManager.scene);
+    } else if (id == 2) {
+      console.log(e);
+      SceneManager.tomi = new TOMIController(e);
+      //SceneManager.tomi.mesh.scale.set(10,10,10)
+      SceneManager.scene.add(SceneManager.tomi);
+    } else if(id >= 3){
+      SceneManager.tomi.__loadAnimations(e, true);
+    }else {
+      if (id < 3) {
+      model.traverse(node=>{
+        if(node.type === 'Mesh') {
+          node.castShadow = false;
+          node.receiveShadow = false;
+        }
       });
-      SceneManager.play();
+      SceneManager.scene.add(model);
+    }
+    }
+   
+    id++;
+    console.log("complete", model);
+   
+  });
+
+  SceneManager.on("loadfinished", () => {
+    //SceneManager.on("render", );
+    SceneManager.play();
+    SceneManager.tomi.randomClip();
+    anime({
+      targets: '#overlay',
+      opacity: 0,
     });
-    SceneManager.loadAssets(Assets.models)
+    const pos = SceneManager.tomi.position.clone();
+    pos.y = 1;
+    SceneManager.controls.lookAt(pos);
+    SceneManager.tomi.lookAt(SceneManager.camera.position);
+  });
+  SceneManager.loadAssets(Assets.models)
     .then((completed) => {
-      console.log("ya");
       res(completed);
     });
   //});

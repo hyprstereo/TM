@@ -183,7 +183,8 @@ export class panoControl extends THREE.EventDispatcher {
   }
 
   lookAt(target) {
-    this.camera.lookAt(target.position);
+    if (this.orbitMode) this.c.target = target.position||target;
+    else this.camera.lookAt(target.position);
   }
 
   onRender(ms = 0) {

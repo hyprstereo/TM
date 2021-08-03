@@ -17,6 +17,12 @@ export function SaveFile( blob, filename ) {
 
 }
 
+export function replaceClipname(find, replace, suffix = '.location') {
+  if (find.contains(find)) {
+    return replace + suffix;
+  }
+}
+
 export function SaveString( text, filename ) {
   if (typeof text === 'object') text = JSON.stringify(text);
   return SaveFile( new Blob( [ text ], { type: 'text/plain' } ), filename );
