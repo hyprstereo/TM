@@ -54174,6 +54174,7 @@ const Assets = {
     "/models/ioc/building2.glb",
     "/models/ioc/tables.glb",
     "/models/tom.gltf",
+    "/models/tomi/long.gltf",
     "/models/tomi/ioc-intro.gltf",
     "/models/tomi/ioc-agility.gltf",
     "/models/tomi/ioc-competitive.gltf",

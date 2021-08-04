@@ -376,8 +376,7 @@ export class TOMIController extends THREE.Object3D {
 
   play(clipName, loop = THREE.LoopPingPong, repeat = 10) {
     const clip = THREE.AnimationClip.findByName(this._clips, clipName);
-    this._mixer.timeScale = 0.3;
-    console.log("play", clipName);
+    this._mixer.timeScale = 1;
     if (clip) {
       const action = this._mixer.clipAction(clip);
 
@@ -408,8 +407,6 @@ export class TOMIController extends THREE.Object3D {
   }
 
   update(delta, elapse = 0, md = undefined) {
-    // if (this._currentAction)
-    //console.log(delta, elapse, md.time)
 
 
     if (this.mesh) {
@@ -417,7 +414,7 @@ export class TOMIController extends THREE.Object3D {
     }
 
 
-    const d = (elapse - this._lastElapse) * this._mixer.timeScale;
+    const d = (elapse - this._lastElapse);// * this._mixer.timeScale;
     //console.log(d);
     this._mixer.update(d);
     const self = this;
