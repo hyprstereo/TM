@@ -108,7 +108,7 @@ export class panoControl extends THREE.EventDispatcher {
     };
     if (!orbit) {
     this._euler = new THREE.Euler(0, 0, 0, "YXZ");
-    this._listeners = dome || document.body;
+    this._listeners =  document.body;
 
     this.needsUpdating = true;
     const self = this;

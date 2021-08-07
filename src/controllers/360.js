@@ -6,8 +6,7 @@ import { FXAAShader } from "./jsm/shaders/FXAAShader.js";
 import { ShaderPass } from "./jsm/postprocessing/ShaderPass.js";
 import { CopyShader } from "./jsm/shaders/CopyShader.js";
 import { EffectComposer } from "./jsm/postprocessing/EffectComposer.js";
-import { createPanoVideo, panoControl } from "./pano.js";
-import { setupTomiFacial, Tomi, TomiModel } from "./scene/tomi.js";
+import { createPanoVideo, panoControl } from "../interact/pano.js";
 import { SAOPass } from "./jsm/postprocessing/SAOPass.js";
 import {degToRad} from './utils/helpers.js'
 
@@ -120,11 +119,6 @@ export const loadAsset = async (scene, assetSrc = undefined) => {
   return await new Promise((resolve, reject) => {
     if (!scene) reject("scene is undefined");
     const container = new THREE.Object3D();
-    // const light = new THREE.AmbientLight(0xffffff, 1.8);
-    // light.position.set(0, 80, -100);
-
-    // const sun = new THREE.DirectionalLight(0xfefefe, 1);
-    // const lighth = new THREE.PointLightHelper(light, 20, 0xffff00);
     sun.position.set(5, 10, 7.5);
     //sun.lookAt(0, 0, 0);
     sun.castShadow = true;
@@ -141,7 +135,6 @@ export const loadAsset = async (scene, assetSrc = undefined) => {
      loader.load(
         assetSrc,
         (evt) => {
-          console.log("loaded", evt);
           const bot = evt.scene || evt; //evt.children[0].children[0];
           //console.log(bot);
           bot.name = "bot";
@@ -301,55 +294,33 @@ export const render = (ms = 0) => {
 //  .catch(error=>{
 //    ... to debug error if needed
 //})
-export const init = async () => {
-  const build = await setupScene(document.getElementById("app")).then(
-    (res) => res
-  );
+export const create360 = async (target, mediaSrc) => {
+  const build = await setupScene(document.querySelector(target))
+  .then((res) => res);
   if (build) {
-    mainRenderer = build.renderer;
-    mainScene = build.scene;
-    mainCamera = build.camera;
-    sceneResize(mainCamera, mainRenderer);
-
-    const { model, scene } = await loadAsset(mainScene, './models/tomi-anim.glb');
-    dome = await createPanoVideo(mainScene, "/models/room_bright.jpg");
-    if (model) {
-
-
-
-
-          tomi = new TomiModel(model, "#tomi-face", scene);
-          tomi
-            .playVoice("./audio/cm_audio/0_Benefits01NEW.mp3", 0.5)
-            .then((sound) => {
-              //TODO: play 3D animation
-              //dome.media.play();
-              tomi.play();
-              render(0);
-            });
-          render(0);
-
-    }
+    //const { model, scene } = await loadAsset(mainScene, './models/tomi-anim.glb');
+    build.dome = await createPanoVideo(mainScene, mediaSrc);
+    return build;
   }
 };
 
-document.body.onload = async (evt) => {
-  await init();
+// document.body.onload = async (evt) => {
+//   await init();
 
-  if (tomi) {
-    mainScene.environment = dome.media;
-    videoPano = new panoControl(dome, { dist: 60 }, tomi, mainCamera), true, mainRenderer;
-    document.addEventListener("keydown", (e) => {
-      console.log(e);
-      switch (e.key) {
-        case "s":
-          tomi.mouth("smile");
-          break;
-        case "t":
-          tomi.mouth("talk");
-          break;
-      }
-    });
-    mainScene.environment = dome.media;
-  }
-};
+//   if (tomi) {
+//     mainScene.environment = dome.media;
+//     videoPano = new panoControl(dome, { dist: 60 }, tomi, mainCamera), true, mainRenderer;
+//     document.addEventListener("keydown", (e) => {
+//       console.log(e);
+//       switch (e.key) {
+//         case "s":
+//           tomi.mouth("smile");
+//           break;
+//         case "t":
+//           tomi.mouth("talk");
+//           break;
+//       }
+//     });
+//     mainScene.environment = dome.media;
+//   }
+// };

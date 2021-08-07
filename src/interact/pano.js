@@ -22,6 +22,7 @@ export const createVideoElement = async (...videoSrc) => {
     video.autoplay = true;
     video.onload = () => resolve(video);
     video.onerror = (e) => rej(null);
+    resolve(video);
   });
 };
 
@@ -79,89 +80,46 @@ export class panoControl extends THREE.EventDispatcher {
   constructor(dome, config = {}, target, camera, orbit = false, renderer) {
     super();
     this._locked = true;
-    this.target =  (target && target.position) ? target.position : new THREE.Vector3();
+    this._target = (target && target.position) ? target.position : new THREE.Vector3();
     this.camera = camera;
     this.isInteracting = false;
     this.orbitMode = orbit;
-    if (this.orbitMode) {
-      this.c = new OrbitControls(camera, renderer.domElement);
-    }
-    this.data = {
-      lon: 0,
-      lat: 0,
-      theta: 0,
-      phi: 0,
-      maxPolarAngle: 30,
-      minPolarAngle: -30,
-      dist: config.dist || 50,
-      ...config,
-      vector: new THREE.Vector2(),
-      decay: false,
-    };
-    this.event = {
-      onPointerX: 0,
-      onPointerY: 0,
-      onPointerLon: 0,
-      onPointerLat: 0,
-      vector: new THREE.Vector2(),
-
-    };
-    if (!orbit) {
-    this._euler = new THREE.Euler(0, 0, 0, "YXZ");
-    this._listeners = dome || document.body;
-
-    this.needsUpdating = true;
-    const self = this;
-
-    this.onPointerDown = (evt) => {
-      self.isInteracting = true;
-      self.event.onPointerX = evt.clientX;
-      self.event.onPointerY = evt.clientY;
-      self.event.onPointerLon = self.data.lon;
-      self.event.onPointerLat = self.data.lat;
-      self.needsUpdating = true;
-    };
-
-    this.onPointerMove = (evt) => {
-      if (self.isInteracting) {
-        self.data.lon =
-          (self.event.onPointerX - evt.clientX) * 0.1 + self.event.onPointerLon;
-        self.data.lat =
-          (self.event.onPointerY - evt.clientY) * 0.1 + self.event.onPointerLat;
-        if (!self.orbitMode) {
-          const movementY = evt.movementX || evt.mozMovementX || evt.webkitMovementX || 0;
-          const movementX = evt.movementY || evt.mozMovementY || evt.webkitMovementY || 0;
-          self.event.vector.x = movementX;
-          self.event.vector.y = movementY;
-        }
-      }
-    };
-
-    this.onPointerUp = (evt) => {
-
-      self.isInteracting = false;
-      self.event.vector.x = self.event.y = 0;
-    };
-
-    this._listeners.addEventListener("pointerdown", this.onPointerDown);
-    this._listeners.addEventListener("pointermove", this.onPointerMove);
-    this._listeners.addEventListener("pointerup", this.onPointerUp);
-    this._listeners.addEventListener("mousedown", this.onPointerDown);
-    this._listeners.addEventListener("mousemove", this.onPointerMove);
-    this._listeners.addEventListener("mouseup", this.onPointerUp);
-  }
+   
+    this.c = new OrbitControls(camera, renderer.domElement);
+    this.setOrbit(orbit);
+    this._maxDistance = this.c.maxDistance;
+    this.c.screenSpacePanning = false;
+    this.c.enablePan = true;
     return this;
   }
 
+  setOrbit(state = true) {
+    this.orbitMode = state;
+    if (state) {
+     this.c.target = this.target;
+    } else {
+      
+     //this.camera.position.copy(this.target);
+    }
+    //this.c.enablePan = !state;
+  }
+
+  set target(src) {
+    this._target = src.position || src;
+    this.c.target = this._target;
+  }
+
+  get target() {
+    return this._target;
+  }
+
   update() {
-    if (this.orbitMode)
-    this.c.update()
+    
+      this.c.update()
   }
 
   destroy() {
-    this._listeners.removeEventListener("pointerdown", this.onPointerDown);
-    this._listeners.removeEventListener("pointermove", this.onPointerMove);
-    this._listeners.removeEventListener("pointerup", this.onPointerUp);
+
   }
 
   get updated() {
@@ -183,53 +141,11 @@ export class panoControl extends THREE.EventDispatcher {
   }
 
   lookAt(target) {
-    if (this.orbitMode) this.c.target = target.position||target;
-    else this.camera.lookAt(target.position);
+    this.target = target;
   }
 
   onRender(ms = 0) {
-    const self = this;
-    if (this.isInteracting) {
-      const camera = self.camera;
-      const target = self.target;
-
-      if (this.orbitMode) {
-        self.data.lat = Math.max(-85, Math.min(85, self.data.lat));
-        const phi = degToRad(90 - self.data.lat);
-        const theta = degToRad(self.data.lon);
-        const distance = self.data.dist;
-        camera.position.x = distance * Math.sin(phi) * Math.cos(theta);
-        camera.position.y = distance * Math.cos(phi);
-        camera.position.z = distance * Math.sin(phi) * Math.sin(theta);
-        camera.lookAt(target);
-      } else {
-        // const pos = new THREE.Vector3(
-        //   distance * Math.sin(phi) * Math.cos(theta),
-        //   distance * Math.cos(phi),
-        //   -distance * Math.sin(phi) * Math.sin(theta)
-        // );
-        this._euler.setFromQuaternion(this.camera.quaternion);
-        const event = this.event;
-        const movementX = event.vector.x || 0;
-        const movementY = event.vector.y || 0;
-
-        this._euler.y -= movementY * 0.002;
-        this._euler.x -= movementX * 0.002;
-
-        this._euler.x = Math.max(
-          PI_2 - this.data.maxPolarAngle,
-          Math.min(PI_2 - this.data.minPolarAngle, this._euler.x)
-        );
-
-        // this._euler.x *= 0.98;
-        // this._euler.y *= 0.98;
-        // this.data.vector.x *= 0.98;
-        // this.data.vector.y *= 0.98;
-
-        this.camera.quaternion.setFromEuler(this._euler);
-      }
-      this.needsUpdating = false;
-    }
+    this.c.update();
   }
 }
 

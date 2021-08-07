@@ -1,11 +1,13 @@
 import * as THREE from "../build/three.module.js";
-import { SETTINGS, setupControls, setupScene } from "../scene/config.js";
+import { SETTINGS, setupControls, setupScene } from "./config.js";
 import Emitter from "../events/emitter.js";
-import { postEffects } from "../scene/config.js";
+import { postEffects } from "./config.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
+
 class SceneManagerImpl extends Emitter {
   constructor() {
     super();
+    this.currentScene;
     this.clock = new THREE.Clock(false);
     this.renderer;
     this.camera;
@@ -24,7 +26,7 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
-      
+
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
         this.renderer,
@@ -44,11 +46,30 @@ class SceneManagerImpl extends Emitter {
       "#app",
       this.renderer
     );
-
+      window.addEventListener('resize', (e) =>{
+        
+      })
     return build;
   }
 
+  _onResize(e) {
+    const parent = this.renderer.domElement
+    const w = parent.offsetWidth || parent.clientWidth;
+    const h = parent.offsetHeight || parent.clientHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    if (this.renderer) this.renderer.setSize(w, h);
+    if (this.composer) {
+      this.composer.setSize(w, h);
+    }
 
+    const pixelRatio = this.renderer.getPixelRatio();
+
+    if (this.fxaa) {
+      this.fxaa.material.uniforms["resolution"].value.x = 1 / (w * pixelRatio);
+      this.fxaa.material.uniforms["resolution"].value.y = 1 / (h * pixelRatio);
+    }
+  }
 
   async loadAssets(src) {
     const sources = src;
@@ -70,7 +91,7 @@ class SceneManagerImpl extends Emitter {
         //arr[sources[counter]] = event;
         self.emit("loadcomplete", event);
         arr.push(event)
-        if (counter < sources.length-1) {
+        if (counter < sources.length - 1) {
           counter++;
           loadModel(sources[counter]);
         } else {
@@ -90,25 +111,28 @@ class SceneManagerImpl extends Emitter {
     this.renderer.shadowMap.needsUpdate = true;
     createjs.Ticker.timingMode = createjs.Ticker.RAF;
     createjs.Ticker.addEventListener("tick", this._onRender.bind(this));
+    window.addEventListener('resize', this._onResize.bind(this));
   }
 
   stop() {
     this.clock.stop();
     createjs.Ticker.removeEventListener("tick", this._onRender.bind(this));
+    window.removeEventListener('resize', this._onResize.bind(this));
   }
 
   _onRender(ms) {
-    this.emit("beforeRender", this.clock.getDelta(), this.clock.getElapsedTime());
-
+    const delta = this.clock.getDelta();
+    const elapsed = this.clock.getElapsedTime();
+    this.emit("beforeRender", delta, elapsed);
+    if (this.tomi) this.tomi.update(delta);
     if (this.controls) this.controls.update();
-    if (this.tomi) this.tomi.update(this.clock.getDelta(), this.clock.getElapsedTime(), ms)
     if (this.composer) {
       this.composer.render();
     } else {
-     // this.renderer.render(this.scene, this.camera)
+      // this.renderer.render(this.scene, this.camera)
     }
 
-    this.emit('afterRender', this.clock.getDelta(), this.clock.getElapsedTime());
+    this.emit('afterRender', delta, elapsed);
   }
 }
 

@@ -2,7 +2,7 @@ import * as THREE from "../build/three.module.js"; //"https://cdnjs.cloudflare.c
 import { Pointer3D } from "../interact/pointer.js";
 import { setupScene, setupControls, SETTINGS } from "../scene/config.js";
 import { LoadAssets } from "../scene/props.js";
-import { TOMIController } from "../scene/tomi.controller.js";
+import { TOMIController } from "./tomi.controller.js";
 
 // global variables
 let mainCamera;
@@ -61,8 +61,6 @@ export const sceneResize = (cam, renderer = undefined) => {
 // a simple asset loader
 export const loadAsset = async (scene, prog = undefined) => {
   console.log('assetloaded');
-
-
   return await LoadAssets(scene, prog);
 };
 
@@ -186,7 +184,7 @@ export const init = async () => {
           );
           mainScene.add(tomi);
 
-          tomi.play("hand.idle");
+          tomi.play(0);
           if (!clock.running) {
             mainRenderer.shadowMap.needsUpdate = true;
             clock.start();

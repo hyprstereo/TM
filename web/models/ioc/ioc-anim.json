@@ -1,0 +1,11 @@
+{
+    "name" : "ioc",
+    "timeScale" : 0.3,
+    "clips" : [
+        
+        "/models/tomi/ioc-agility.gltf",
+        "/models/tomi/ioc-competitive.gltf",
+        "/models/tomi/ioc-cost.gltf",
+        "/models/tomi/ioc-enablement.gltf"
+    ]
+}

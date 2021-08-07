@@ -42,6 +42,7 @@ export class SceneManager extends Emitter {
     this._isLoading = false;
     this._isBusy = false;
     this.speech = new TTS({ voice: 0, pitch: 1.001 });
+    this._audio = new Howler
     this._layers = {
       lights: 2,
       meshes: 1,
@@ -59,7 +60,7 @@ export class SceneManager extends Emitter {
   }
 
   get clock() {
-    return this, this._clock;
+    return this._clock;
   }
 
   get renderer() {
@@ -124,7 +125,6 @@ export class SceneManager extends Emitter {
           ? new helperType(mesh)
           : new THREE.Box3Helper(box, 0xffff00);
         bhelper.layers.set(this._layers.helpers);
-        //mesh.layers.set(this._layers.meshes);
         mesh.add(bhelper);
       }
     } else if (mesh.type === "Light") {
@@ -308,7 +308,7 @@ export function setupControls(
     { dist: 7 },
     null,
     camera,
-    true,
+    false,
     renderer
   );
   const screen = document.querySelector(targetEl);

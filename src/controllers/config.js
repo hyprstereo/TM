@@ -14,7 +14,7 @@ import { ReflectorForSSRPass } from "../jsm/objects/ReflectorForSSRPass.js";
 
 import { EffectComposer } from "../jsm/postprocessing/EffectComposer.js";
 import { SAOPass } from "../jsm/postprocessing/SAOPass.js";
-import { panoControl } from "../pano.js";
+import { panoControl } from "../interact/pano.js";
 import Emitter from "../events/emitter.js";
 import { TTS } from "../utils/tts.js";
 import { Vector2 } from "../build/three.module.js";
@@ -264,7 +264,6 @@ export const setupScene = async (
 
     camera.position.set(0.5, 1.5, -7);
 
-    const clock = SceneManageclock;
 
     const canvas = renderer.domElement;
 
@@ -284,7 +283,6 @@ export const setupScene = async (
       camera,
       stats,
       composer,
-      clock,
     };
     //SceneManager.instance.createLightProbe(scene, renderer);
 

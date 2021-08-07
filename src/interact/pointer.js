@@ -16,12 +16,13 @@ export class Pointer3D extends Emitter {
     this.cursor = new Vector2();
     this.raycaster = new Raycaster();
     this.raycaster.layers.disableAll()
-    this.raycaster.layers.enable(2);
+    this.raycaster.layers.enable(layerId);
     this._enable = true;
     this._cam = camera;
     this._scene = scene;
     this._listener = context;
     this._layerId = layerId;
+    this.enabled = this._enable;
   }
 
   set enabled(s) {
@@ -43,7 +44,7 @@ export class Pointer3D extends Emitter {
   addSelected(object) {
 
       this.selectedObjects = [];
-      this.selectedObjects.push(object.parent.name.startsWith('Scene0') ? object.parent.children : object);
+      this.selectedObjects.push(object);
 
   }
 
@@ -56,7 +57,8 @@ export class Pointer3D extends Emitter {
       this.addSelected(selectedObject);
       this.emit("hover", this.selectedObjects);
     } else {
-      //this.selectedObjects = [];
+      this.selectedObjects = [];
+      this.emit("hover", this.selectedObjects);
     }
   }
 

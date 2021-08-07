@@ -9,7 +9,7 @@ export default {
 
 
   input: "./src/app.js",
-  external: '/js/build',
+  external: ['lodash', 'THREE', 'createjs', ''],
   output: [
     {
       file: "./public/app/tm.one.js",

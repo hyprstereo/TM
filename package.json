@@ -73,7 +73,8 @@
   "devependencies": {},
   "scripts": {
     "serve": "npx rollup -c && node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "static" : "node index.js",
+    "test": "echo \"Error: no test speci0fied\" && exit 1"
   },
   "repository": {
     "type": "git",
