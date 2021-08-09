@@ -20,19 +20,21 @@ import { createVideoElement } from "./interact/pano.js";
 import { Vector3 } from "../web/js/build/three.module.js";
 import { Pointer3D } from "./interact/pointer.js";
 import { SpriteLayer } from "./objects/sprites.js";
+import { TTS } from "./utils/tts.js";
+
 
 export const Assets = {
   models: [
     "/models/ioc/building2.glb",
     "/models/ioc/tables.glb",
     "/models/ioc/screens.gltf",
-    "/models/tom.gltf",
-    "/models/tomi/idle.gltf",
-    "/models/tomi/long.gltf",
-    "/models/tomi/ioc-agility.gltf",
-    "/models/tomi/ioc-competitive.gltf",
-    "/models/tomi/ioc-cost.gltf",
-    "/models/tomi/ioc-enablement.gltf"
+    "/models/tomi/tomi.gltf",
+    // "/models/tomi/idle.gltf",
+    // "/models/tomi/long.gltf",
+    // "/models/tomi/ioc-agility.gltf",
+    // "/models/tomi/ioc-competitive.gltf",
+    // "/models/tomi/ioc-cost.gltf",
+    // "/models/tomi/ioc-enablement.gltf"
   ],
   textures: ["/"],
 };
@@ -41,6 +43,7 @@ const TerminalStartPos = JSON.parse(data);
 
 const iocScene = new IOCScene();
 let pointer;
+let index = 0;
 const ledMats = [];
 const init = async () => {
   // configure UI
@@ -137,7 +140,8 @@ const setupVideoPanel = async () => {
   ledMats[1].material = new MeshBasicMaterial({ map: videoMat });
   videoT.play();
 }
-
+let speech = new TTS({voice: 0})
+let  pi = 1
 document.body.onload = async (evt) => {
   await init();
   window.addEventListener('keydown', (e) => {
@@ -150,6 +154,21 @@ document.body.onload = async (evt) => {
     } else if (e.key === 'x') {
       SceneManager.tomi.playSound(1, 1);
       // SceneManager.tomi.playSound(0);
+    } else if(e.key === 'y') {
+      //
+      const text = `Hey there, welcome to our Virtual Network Operations Centre, NOC for short. My name is TOMI, that’s Too much information, too much intelligence, and too much imagination...but hey, what is an AI bot to do!!? My job today is to take you nice folks on a virtual journey of our IOC and cybersecurity. There is lots to do so I will keep it high level. Feel free to wander around and when you are ready, please make your selection. Have fun!`;
+      
+      SceneManager.speak(text);
+        
+      
+    // speech.speak(text)
+    } else if(e.key === 'z') {
+      index++;
+      // speech.speech.pitch += 0.1;
+      speech.speech.voice = speech.voices[index];
+      console.log(`${speech.voice.name}`)
+    }else if(e.key == 'u') {
+      pi += 0.1;
     }
-  });
+  }); 
 };
