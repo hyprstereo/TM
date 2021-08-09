@@ -1,7 +1,6 @@
-import { TextureLoader } from "../build/three.module";
-import { ImageLoader, Sprite, SpriteMaterial } from "../build/three.module";
+import { TextureLoader, ImageLoader, Sprite, SpriteMaterial } from "../build/three.module";
 const spriteLoader = new TextureLoader();
-export const SpriteLayer = 4;
+export const SpriteLayer = 5;
 export class SpriteButton extends Sprite {
     constructor(material = undefined) {
         if (!material) material = new SpriteMaterial();

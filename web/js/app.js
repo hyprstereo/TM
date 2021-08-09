@@ -44,17 +44,24 @@ const init = async () => {
   SceneManager.on("loadbegin", (e) => console.log("begin", e));
   SceneManager.on("loadprogress", (e) => console.log("progress", e));
   SceneManager.on("loadcomplete", (e) => {
+
+
     let model = e.scene || e;
+
+
     if (id == 1) {
       SceneManager.scene.add(model);
       setupScreens(model, SceneManager.scene);
+
     } else if (id == 2) {
-      console.log(e)
+
+
       SceneManager.tomi = new TOMIController(e);
-      //SceneManager.tomi.mesh.scale.set(10,10,10)
       SceneManager.scene.add(SceneManager.tomi);
+
+      
     } else if(id >= 3){
-      SceneManager.tomi.__loadAnimations(e, true);
+      SceneManager.tomi.loadTrack(e);
     }else {
       if (id < 3) {
       model.traverse(node=>{

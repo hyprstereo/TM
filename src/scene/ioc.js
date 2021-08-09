@@ -24,10 +24,15 @@ export class IOCScene extends Emitter {
         btns[0].position.x -= .5;
         btns[0].state = 0;
         btns[1].state = 0;
+        
         btns[1].position.x += .5;
         this._group.add(btns[0]);
         this._group.add(btns[1]);
         this._buttons = btns;
+        return this._group;
+    }
+
+    get GUIGroup() {
         return this._group;
     }
 
@@ -40,7 +45,7 @@ export class IOCScene extends Emitter {
         this._buttons.forEach((b, i)=>{
             const s = b.state;
             if (this._state === s) {
-                b.show( i * 50);
+                b.show( i * 500);
             } else {
                 b.hide(i * 50);
             }

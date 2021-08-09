@@ -1,5 +1,6 @@
 import * as THREE from "../build/three.module.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
+import { SceneManager } from "./view.js";
 
 export class TOMIController extends THREE.Object3D {
   constructor(mesh = undefined, scale = 1) {
@@ -25,6 +26,7 @@ export class TOMIController extends THREE.Object3D {
     this._lastElapse = 0;
     this._effector = 0;
     this._syncClip = -1;
+    this._reflect = null;
     this._faceDim = {
       col: 4,
       row: 4,
@@ -47,7 +49,7 @@ export class TOMIController extends THREE.Object3D {
     const self = this;
 
     this._sound.on('play', (e) => {
-      if (self._syncClip>-1) {
+      if (self._syncClip > -1) {
         self.play(self._syncClip);
       }
     })
@@ -56,6 +58,8 @@ export class TOMIController extends THREE.Object3D {
 
   bind(mesh, scale = 1) {
     this.mesh = mesh;
+    this.add(SceneManager._reflect)
+    SceneManager._reflect.position.set(0, 0, 0)
     const group = new THREE.Object3D();
     group.add(mesh);
 
@@ -63,20 +67,26 @@ export class TOMIController extends THREE.Object3D {
     // mesh.scale.set(scale, scale, scale);
     const self = this;
 
-    const shield = new THREE.MeshPhysicalMaterial({
-      metalness: 0.5,
-      roughness: 0.3,
+    const shield = new THREE.MeshPhongMaterial({
+
+      shininess: 100,
+      color: 0xffffff,
+      specular: 0xffffff,
+
+      envMap: SceneManager._reflect.texture,
     });
+    //SceneManager._reflect.texture.needsUpdate = true;
 
     const blue = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0.5,
       emissive: 0xffffff,
+      envMap: SceneManager._reflect.texture,
     });
 
-    new THREE.TextureLoader().load("/models/texture/e.jpg", (t) => {
-      shield.envMap = t;
-    });
+    // new THREE.TextureLoader().load("/models/texture/e.jpg", (t) => {
+    //   shield.envMap = t;
+    // });
 
 
     const eye = new THREE.MeshLambertMaterial({
@@ -127,6 +137,7 @@ export class TOMIController extends THREE.Object3D {
         }
       }
     });
+    SceneManager._reflect.texture.needsUpdate = true;
     mesh.position.set(0, 1, 0);
     this.__init(mesh);
   }
@@ -224,7 +235,7 @@ export class TOMIController extends THREE.Object3D {
     } else {
       clip = THREE.AnimationClip.findByName(this._clips, clipNameOrIndex);
     }
-    
+
 
     //this._mixer.timeScale = 1;
     if (clip) {
@@ -236,7 +247,7 @@ export class TOMIController extends THREE.Object3D {
       ) {
         const ca = this._currentAction;
         action.loop = loop;
-      
+
         action.play();
         action.fadeIn(1.2);
         ca.fadeOut(1.2);

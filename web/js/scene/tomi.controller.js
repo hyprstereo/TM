@@ -1,8 +1,5 @@
 
 import * as THREE from "../build/three.module.js";
-
-
-import { SpriteTexture, Tomi } from "./tomi.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
 
 const bonesRef = [
@@ -124,7 +121,6 @@ export class TOMIController extends THREE.Object3D {
     }
   }
 
-
   bind(mesh, scale = 1) {
     // this.mesh = mesh;
     const group = new THREE.Object3D();
@@ -243,7 +239,6 @@ export class TOMIController extends THREE.Object3D {
   __init(m) {
     m.layers.set(2);
     const self = this;
-
   }
 
   lookAt(target, eyeLevel = true) {
@@ -302,14 +297,12 @@ export class TOMIController extends THREE.Object3D {
     this._mixer.timeScale = 1;
     if (clip) {
       const action = this._mixer.clipAction(clip);
-
-
       if (
         this._currentAction &&
         this._currentAction.getClip().name !== clipName
       ) {
         const ca = this._currentAction;
-        //ca.stop();
+
         action.loop = loop;
         action.play();
         action.fadeIn(1.2);
@@ -323,13 +316,9 @@ export class TOMIController extends THREE.Object3D {
       this._currentClip = clip;
       this._currentAction = action;
     }
-
-
   }
 
   update(delta, elapse = 0, md = undefined) {
-
-
     if (this.mesh) {
       //this.mesh.position.y = 1 + Math.sin(0.3 + elapse * (3 + this._effector)) * 0.1;
     }

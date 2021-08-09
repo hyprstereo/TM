@@ -19,7 +19,7 @@
 
     const self = this;
     window.speechSynthesis.onvoiceschanged = () => {
-      self.populateVoices()
+      //self.populateVoices()
      // self.emit('onvoiceschanged', self.voices);
     };
 
@@ -46,7 +46,7 @@
   }
 
   set voice(id) {
-    this.speech.voice = this.voices[id];
+    this.speech.voice = this.voices[id] || this.voices[0];
   }
 
   get voice() {

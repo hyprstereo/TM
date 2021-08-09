@@ -1,5 +1,6 @@
-import * as THREE from "../build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
+import * as THREE from "../build/three.module.js";
 import { Pointer3D } from "../interact/pointer.js";
+import { SpriteLayer } from "../objects/sprites.js";
 import { setupScene, setupControls, SETTINGS } from "../scene/config.js";
 import { LoadAssets } from "../scene/props.js";
 import { TOMIController } from "./tomi.controller.js";
@@ -136,7 +137,7 @@ export const init = async () => {
     mainCamera = build.camera;
 
     let selects = [];
-    pointer = new Pointer3D(mainCamera, mainScene, mainRenderer.domElement);
+    pointer = new Pointer3D(mainCamera, mainScene, mainRenderer.domElement, SpriteLayer);
 
     pointer.enabled = true;
     //SceneManager.instance.createLightProbe(mainScene);
@@ -156,8 +157,13 @@ export const init = async () => {
       //console.log('hover', JSON.stringify(obj.parent.userData));
     });
     pointer.on('pointermove', (cursor) => {
-      //console.log(cursor)
+      console.log(cursor)
     });
+
+    pointer.on('pointertouch', (cursor) =>{
+      console.log(cursor);
+
+    })
 
     mainComposer = composer;
     pe_fxaa = fxaa;

@@ -76,7 +76,7 @@ const PI_HALF = Math.PI / 2;
  * TODO: dome is redundant now
  */
 export class panoControl extends THREE.EventDispatcher {
-  constructor(dome, config = {}, target, camera, orbit = false, renderer) {
+  constructor(dome, config = {}, target, camera, orbit = true, renderer) {
     super();
     this._locked = true;
     this.target =  (target && target.position) ? target.position : new THREE.Vector3();

@@ -41452,7 +41452,8 @@ class Pointer3D extends Emitter {
     this.selectedObjects = [];
     this.cursor = new Vector2$1();
     this.raycaster = new Raycaster();
-    this.raycaster.layers.disableAll();
+   // this.raycaster.layers.enableAll()
+   this.raycaster.layers.disableAll();
     this.raycaster.layers.enable(layerId);
     this._enable = true;
     this._cam = camera;
@@ -41470,18 +41471,22 @@ class Pointer3D extends Emitter {
         "pointermove",
         this.onPointerMove.bind(this)
       );
+      this._listener.addEventListener(
+        'pointerdown',
+       this.onPointerTouch.bind(this));
     } else {
       this._listener.removeEventListener(
         "pointermove",
         this.onPointerMove.bind(this)
       );
+      // this._listener.
     }
   }
 
   addSelected(object) {
 
-      this.selectedObjects = [];
-      this.selectedObjects.push(object);
+    this.selectedObjects = [];
+    this.selectedObjects.push(object);
 
   }
 
@@ -41492,20 +41497,59 @@ class Pointer3D extends Emitter {
     if (objects.length > 0) {
       const selectedObject = objects[0].object;
       this.addSelected(selectedObject);
-      this.emit("hover", this.selectedObjects);
-    } else {
-      this.selectedObjects = [];
-      this.emit("hover", this.selectedObjects);
+     
     }
   }
 
   onPointerMove(event) {
+    // if (!event.isPrimary) return;
+    // this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
+    // this.cursor.y = (event.clientY / window.innerHeight) * 2 + 1;
+    // this.chkIntersection();
+    // this.emit("pointermove", this.cursor);
+   // this.emit("hover", this.selectedObjects);
+  }
+
+  onPointerTouch(event) {
     if (!event.isPrimary) return;
     this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.cursor.y = (event.clientY / window.innerHeight) * 2 + 1;
     this.chkIntersection();
-    this.emit("pointermove", this.cursor);
+    this.emit("pointertouch", this.cursor);
   }
+}
+
+const spriteLoader = new TextureLoader$1();
+const SpriteLayer = 5;
+class SpriteButton extends Sprite$1 {
+    constructor(material = undefined) {
+        if (!material) material = new SpriteMaterial$1();
+        super(material);
+        this.layers.set(SpriteLayer);
+        this._hidden = false;
+        this.state = -1;
+        this.hide();
+        return this;
+    }
+
+    async load(src) {
+        return await new Promise((res, rej) =>{
+            spriteLoader.load(src, (img) => {
+                this.material.map = img;
+                res(this); 
+            },null, (e) => rej(e));
+        });
+    }
+
+    show(delay = 0) {
+        this._hidden = false;
+        createjs.Tween.get(this.scale ).to({x: 1, y: 1}, 600, createjs.Ease.bounceOut).wait(delay);
+    }
+
+    hide(delay=0) {
+        this._hidden = true;
+        createjs.Tween.get(this.scale ).to({x: 0, y: 0}, 600, createjs.Ease.bounceOut).wait(delay);
+    }
 }
 
 const isMobile = () => {
@@ -51604,6 +51648,95 @@ class panoControl extends EventDispatcher$1 {
 }
 
 /**
+ * Text-To-Speech JS Utility
+ * author: Gabriel Lim (hello@gabriellim.com)
+ */
+
+
+ class TTS  {
+  constructor(config = {}) {
+
+    this.speech = new SpeechSynthesisUtterance();
+    this.lang = config.lang || 'en-US';
+    this.populateVoices();
+    this.pitch = config.pitch || 1.2;
+    this.voice = config.voice || 0;
+    this.volume = 0.5;
+    this.speech.onstart = (e) => this.emit('onstart', e);
+    this.speech.onend = (e) => this.emit('onstart', e);
+    this.speech.onmark = (e) => this.emit('onmark', e);
+    window.speechSynthesis.onvoiceschanged = () => {
+      //self.populateVoices()
+     // self.emit('onvoiceschanged', self.voices);
+    };
+
+    return this;
+  }
+
+  populateVoices() {
+
+    this._voices = window.speechSynthesis.getVoices();
+  }
+
+  get voices() {
+    return this._voices;
+  }
+
+
+  set lang(lang) {
+    this.speech.lang = lang;
+  }
+
+  get lang() {
+    return this.speech.lang;
+  }
+
+  set voice(id) {
+    this.speech.voice = this.voices[id] || this.voices[0];
+  }
+
+  get voice() {
+    return this.speech.voice;
+  }
+
+  set pitch(p) {
+    this.speech.pitch = p;
+  }
+
+  get pitch() {
+    return this.speech.pitch;
+  }
+
+  set volume(v) {
+    this.speech.volume = v;
+  }
+
+  get volume() {
+    return this.speech.volume;
+  }
+
+  speak(text) {
+    this.speech.text = text;
+    this.synthesizer.speak(this.speech);
+  }
+
+  cancel() {
+    this.synthesizer.cancel();
+  }
+
+  pause() {
+    this.synthesizer.pause();
+  }
+
+  resume() {
+    this.synthesizer.resume();
+  }
+  get synthesizer() {
+    return window.speechSynthesis;
+  }
+}
+
+/**
  * Based on http://www.emagix.net/academic/mscs-project/item/camera-sync-with-css3-and-webgl-threejs
  */
 
@@ -51738,300 +51871,6 @@ const setupScreens = (tablesSet, scene = undefined) => {
       counter++;
     });
   });
-};
-
-class TOMIController extends Object3D$1 {
-  constructor(mesh = undefined, scale = 1) {
-    super();
-    this._mixer = null;
-    this._sounds = [];
-    this._clips = [];
-    this._actionSet = {};
-    this._sound;
-    this.mesh = mesh.scene || mesh;
-    this.states = {};
-    this._state = "idle";
-    this._face = null;
-    this.bones = {};
-    this.rigs = {};
-    this.useAnimations = true;
-    this._currentClip = null;
-    this._currentAction = null;
-    this._resetPose = false;
-    this._faceTexture = null;
-    this._faceState = 'idle';
-    this._talking = true;
-    this._lastElapse = 0;
-    this._effector = 0;
-    this._syncClip = -1;
-    this._faceDim = {
-      col: 4,
-      row: 4,
-    };
-    if (mesh) {
-      this.bind(this.mesh, scale);
-      if (mesh.animations) {
-        this.__loadAnimations(mesh);
-      }
-    }
-  }
-
-  addSound(...src) {
-    this._sounds.push(...src);
-    this._sound = new Howl({
-      src: this._sounds,
-      html5: true,
-      autoUnlock: true
-    });
-    const self = this;
-
-    this._sound.on('play', (e) => {
-      if (self._syncClip>-1) {
-        self.play(self._syncClip);
-      }
-    });
-  }
-
-
-  bind(mesh, scale = 1) {
-    this.mesh = mesh;
-    const group = new Object3D$1();
-    group.add(mesh);
-
-    this.add(group);
-    // mesh.scale.set(scale, scale, scale);
-    const self = this;
-
-    const shield = new MeshPhysicalMaterial$1({
-      metalness: 0.5,
-      roughness: 0.3,
-    });
-
-    const blue = new MeshBasicMaterial$1({
-      transparent: true,
-      opacity: 0.5,
-      emissive: 0xffffff,
-    });
-
-    new TextureLoader$1().load("/models/texture/e.jpg", (t) => {
-      shield.envMap = t;
-    });
-
-
-    const eye = new MeshLambertMaterial$1({
-      //map: self._faceTexture,
-
-    });
-
-    mesh.traverse((n) => {
-      if (n.type.endsWith("esh")) {
-        if (n.material) {
-          n.material.side = DoubleSide$1;
-          n.material.transparent = true;
-        }
-        if (n.name == "facexxx" || n.name == "xxxbody_15") {
-          SpriteTexture(n, "/models/texture/faces.png")
-            .then((texture) => {
-              texture.flipY = false;
-              self._faceTexture = texture;
-              self._faceTexture.flipY = false;
-              self.__faceIndex("talk");
-              const faceMat = new MeshLambertMaterial$1({
-                map: self._faceTexture,
-                // emissive: 0x58F4F5,
-              });
-              n.material = faceMat;
-            })
-            .catch((e) => console.warn(e));
-        } else {
-
-          //sconsole.log('mat', n.material.name, n.material.map);
-          if (n.material.name === "Material #63") {
-            shield.map = n.material.map;
-            n.material = shield;
-          } else if (n.material.name === "Material #10") {
-            blue.map = n.material.map;
-            blue.alphaMap = n.material.alphaMap;
-
-            n.material = blue;
-          } else if (n.material.name.startsWith('eye')) {
-
-            // n.material.emissive = 0x58F4F5;
-            eye.map = n.material.map;
-            eye.alphaMap = n.material.alphaMap;
-            n.material = eye;
-            //n.material.transparent = true;
-            //n.material.emissive = 0x58F4F5;
-          }
-        }
-      }
-    });
-    mesh.position.set(0, 1, 0);
-    this.__init(mesh);
-  }
-
-  async load(
-    src = "./models/tom.gltf",
-    progress = undefined,
-    compressed = false
-  ) {
-    return new Promise(
-      (res, rej) => {
-        const loader = new GLTFLoader();
-        loader.load(
-          src,
-          (asset) => {
-            const model = asset.scene || asset;
-            if (model) {
-              this.bind(model);
-              if (asset.animations) {
-                this.__loadAnimations(asset);
-              }
-              res(this);
-            } else {
-              rej(`invalid mesh`);
-            }
-          },
-          (prog) => {
-            if (progress) progress(prog);
-          }
-        );
-      },
-      (err) => {
-        rej(err);
-      }
-    );
-  }
-
-  __init(m) {
-    m.layers.set(2);
-  }
-
-  lookAt(target, eyeLevel = true) {
-    if (target instanceof Object3D$1) {
-      target = target.position.clone();
-    }
-    if (eyeLevel) target.y = this.mesh.position.y;
-    this.mesh.lookAt(target);
-
-  }
-
-  async __loadAnimations(scene, onlyClips = false) {
-    console.log(scene.animations);
-    if (onlyClips) {
-
-      const clip = scene.animations[0];
-      clip.name += this._clips.length;
-      clip.tracks.splice(2, 2);
-      this._clips.push(clip);
-      return
-    }
-
-    const mixer = new AnimationMixer$1(this.mesh);
-
-    mixer.timeScale = 1;
-    //this._clips = scene.animations;
-    const self = this;
-    mixer.addEventListener("finished", (e) => {
-      if (this._currentAction) {
-        this._currentAction.fadeOut(1.2);
-      }
-      self.dispatchEvent({ type: "animationend" });
-    });
-    mixer.addEventListener("loop", (e) => {
-      self.dispatchEvent({ type: "animationend" });
-    });
-    this._mixer = mixer;
-  }
-
-  randomClip() {
-    if (this._clips.length < 1)
-      return
-    const animationId = Math.min(
-      this._clips.length - 1,
-      Math.round(Math.random() * this._clips.length)
-    );
-
-    this.play(animationId);
-  }
-
-  play(clipNameOrIndex, loop = LoopOnce$1, repeat = 10) {
-    let clip;
-    if (typeof clipNameOrIndex === 'number') {
-      clip = this._clips[clipNameOrIndex];
-    } else {
-      clip = AnimationClip$1.findByName(this._clips, clipNameOrIndex);
-    }
-    
-
-    //this._mixer.timeScale = 1;
-    if (clip) {
-      const action = this._mixer.clipAction(clip);
-
-      if (
-        this._currentAction &&
-        this._currentAction.getClip().name !== clip.name
-      ) {
-        const ca = this._currentAction;
-        action.loop = loop;
-      
-        action.play();
-        action.fadeIn(1.2);
-        ca.fadeOut(1.2);
-
-        setTimeout((_) => ca.stop(), 2000);
-      } else {
-        action.loop = loop;
-        action.play();
-      }
-      this._currentClip = clip;
-      this._currentAction = action;
-    }
-  }
-
-  playSound(audioIndex, syncClip = -1) {
-    if (this._sounds[audioIndex]) {
-      this._syncClip = syncClip;
-      this._sound.src = this._sounds[audioIndex];
-      this._sound.play();
-    }
-  }
-
-  update(delta, elapse = 0, md = undefined) {
-    if (this.mesh) ;
-    this._mixer.update(delta);
-  }
-
-  async loadTracks(scene) {
-    return this.__loadAnimations(scene, true)
-  }
-
-  __faceIndex(actions = "idle") {
-    return
-  }
-}
-
-const SpriteTexture = async (target, src) => {
-  const texture = await new TextureLoader$1().load(src);
-  texture.flipY = false;
-  return texture;
-};
-
-let loadScreen;
-// setup three js function
-// usage ie:
-// var scene = await setupScene('#app', [id_name_for_canvas], [optional config = {}])
-// if (scene) {s
-//    ...start the scene etc
-// }
-
-const createLoadScreen = () => {
-  loadScreen = document.querySelector("#overlay");
-  const prog = loadScreen.querySelector(".prog");
-  const updateScreen = (msg) => {
-    prog.innerHTML = `<span>${msg}</span>`;
-  };
-  return { screen: loadScreen, fn: updateScreen };
 };
 
 const SETTINGS = {
@@ -52248,6 +52087,12 @@ class SceneManagerImpl extends Emitter {
     this.tomi;
     this.assets = {};
     this._loader = new GLTFLoader();
+    this.speech =  new TTS({voice: 0});
+    this._reflect;//  = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
+  }
+
+  speak(txt) {
+    this.speech.speak(txt);
   }
 
   async setup(target = "#app", props = undefined) {
@@ -52256,6 +52101,10 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
+      const cube = new WebGLCubeRenderTarget$1( 128, { format: RGBFormat$1, generateMipmaps: true, minFilter:LinearMipmapLinearFilter$1 } );
+      cube.needsUpdate = true;
+      this._reflect = new CubeCamera$1(.1, 1000, cube);
+      this.scene.background = this._reflect;
 
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
@@ -52285,6 +52134,7 @@ class SceneManagerImpl extends Emitter {
   _onResize(e) {
     const parent = this.renderer.domElement;
     const w = parent.offsetWidth || parent.clientWidth;
+    
     const h = parent.offsetHeight || parent.clientHeight;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -52355,7 +52205,11 @@ class SceneManagerImpl extends Emitter {
     const elapsed = this.clock.getElapsedTime();
     this.emit("beforeRender", delta, elapsed);
     if (this.tomi) this.tomi.update(delta);
+    if (this._reflect) {
+        this._reflect.update(this.renderer, this.scene);
+    }
     if (this.controls) this.controls.update();
+     this.camera.ta;
     if (this.composer) {
       this.composer.render();
     }
@@ -52432,38 +52286,309 @@ function createHelper(object, helperType = undefined) {
 
 const SceneManager = new SceneManagerImpl();
 
-const spriteLoader = new TextureLoader$1();
-const SpriteLayer = 4;
-class SpriteButton extends Sprite$1 {
-    constructor(material = undefined) {
-        if (!material) material = new SpriteMaterial$1();
-        super(material);
-        this.layers.set(SpriteLayer);
-        this._hidden = false;
-        this.state = -1;
-        this.hide();
-        return this;
+class TOMIController extends Object3D$1 {
+  constructor(mesh = undefined, scale = 1) {
+    super();
+    this._mixer = null;
+    this._sounds = [];
+    this._clips = [];
+    this._actionSet = {};
+    this._sound;
+    this.mesh = mesh.scene || mesh;
+    this.states = {};
+    this._state = "idle";
+    this._face = null;
+    this.bones = {};
+    this.rigs = {};
+    this.useAnimations = true;
+    this._currentClip = null;
+    this._currentAction = null;
+    this._resetPose = false;
+    this._faceTexture = null;
+    this._faceState = 'idle';
+    this._talking = true;
+    this._lastElapse = 0;
+    this._effector = 0;
+    this._syncClip = -1;
+    this._reflect = null;
+    this._faceDim = {
+      col: 4,
+      row: 4,
+    };
+    if (mesh) {
+      this.bind(this.mesh, scale);
+      if (mesh.animations) {
+        this.__loadAnimations(mesh);
+      }
+    }
+  }
+
+  addSound(...src) {
+    this._sounds.push(...src);
+    this._sound = new Howl({
+      src: this._sounds,
+      html5: true,
+      autoUnlock: true
+    });
+    const self = this;
+
+    this._sound.on('play', (e) => {
+      if (self._syncClip > -1) {
+        self.play(self._syncClip);
+      }
+    });
+  }
+
+
+  bind(mesh, scale = 1) {
+    this.mesh = mesh;
+    this.add(SceneManager._reflect);
+    SceneManager._reflect.position.set(0, 0, 0);
+    const group = new Object3D$1();
+    group.add(mesh);
+
+    this.add(group);
+    // mesh.scale.set(scale, scale, scale);
+    const self = this;
+
+    const shield = new MeshPhongMaterial$1({
+
+      shininess: 100,
+      color: 0xffffff,
+      specular: 0xffffff,
+
+      envMap: SceneManager._reflect.texture,
+    });
+    //SceneManager._reflect.texture.needsUpdate = true;
+
+    const blue = new MeshBasicMaterial$1({
+      transparent: true,
+      opacity: 0.5,
+      emissive: 0xffffff,
+      envMap: SceneManager._reflect.texture,
+    });
+
+    // new THREE.TextureLoader().load("/models/texture/e.jpg", (t) => {
+    //   shield.envMap = t;
+    // });
+
+
+    const eye = new MeshLambertMaterial$1({
+      //map: self._faceTexture,
+
+    });
+
+    mesh.traverse((n) => {
+      if (n.type.endsWith("esh")) {
+        if (n.material) {
+          n.material.side = DoubleSide$1;
+          n.material.transparent = true;
+        }
+        if (n.name == "facexxx" || n.name == "xxxbody_15") {
+          SpriteTexture(n, "/models/texture/faces.png")
+            .then((texture) => {
+              texture.flipY = false;
+              self._faceTexture = texture;
+              self._faceTexture.flipY = false;
+              self.__faceIndex("talk");
+              const faceMat = new MeshLambertMaterial$1({
+                map: self._faceTexture,
+                // emissive: 0x58F4F5,
+              });
+              n.material = faceMat;
+            })
+            .catch((e) => console.warn(e));
+        } else {
+
+          //sconsole.log('mat', n.material.name, n.material.map);
+          if (n.material.name === "Material #63") {
+            shield.map = n.material.map;
+            n.material = shield;
+          } else if (n.material.name === "Material #10") {
+            blue.map = n.material.map;
+            blue.alphaMap = n.material.alphaMap;
+
+            n.material = blue;
+          } else if (n.material.name.startsWith('eye')) {
+
+            // n.material.emissive = 0x58F4F5;
+            eye.map = n.material.map;
+            eye.alphaMap = n.material.alphaMap;
+            n.material = eye;
+            //n.material.transparent = true;
+            //n.material.emissive = 0x58F4F5;
+          }
+        }
+      }
+    });
+    SceneManager._reflect.texture.needsUpdate = true;
+    mesh.position.set(0, 1, 0);
+    this.__init(mesh);
+  }
+
+  async load(
+    src = "./models/tom.gltf",
+    progress = undefined,
+    compressed = false
+  ) {
+    return new Promise(
+      (res, rej) => {
+        const loader = new GLTFLoader();
+        loader.load(
+          src,
+          (asset) => {
+            const model = asset.scene || asset;
+            if (model) {
+              this.bind(model);
+              if (asset.animations) {
+                this.__loadAnimations(asset);
+              }
+              res(this);
+            } else {
+              rej(`invalid mesh`);
+            }
+          },
+          (prog) => {
+            if (progress) progress(prog);
+          }
+        );
+      },
+      (err) => {
+        rej(err);
+      }
+    );
+  }
+
+  __init(m) {
+    m.layers.set(2);
+  }
+
+  lookAt(target, eyeLevel = true) {
+    if (target instanceof Object3D$1) {
+      target = target.position.clone();
+    }
+    if (eyeLevel) target.y = this.mesh.position.y;
+    this.mesh.lookAt(target);
+
+  }
+
+  async __loadAnimations(scene, onlyClips = false) {
+    console.log(scene.animations);
+    if (onlyClips) {
+
+      const clip = scene.animations[0];
+      clip.name += this._clips.length;
+      clip.tracks.splice(2, 2);
+      this._clips.push(clip);
+      return
     }
 
-    async load(src) {
-        return await new Promise((res, rej) =>{
-            spriteLoader.load(src, (img) => {
-                this.material.map = img;
-                res(this); 
-            },null, (e) => rej(e));
-        });
+    const mixer = new AnimationMixer$1(this.mesh);
+
+    mixer.timeScale = 1;
+    //this._clips = scene.animations;
+    const self = this;
+    mixer.addEventListener("finished", (e) => {
+      if (this._currentAction) {
+        this._currentAction.fadeOut(1.2);
+      }
+      self.dispatchEvent({ type: "animationend" });
+    });
+    mixer.addEventListener("loop", (e) => {
+      self.dispatchEvent({ type: "animationend" });
+    });
+    this._mixer = mixer;
+  }
+
+  randomClip() {
+    if (this._clips.length < 1)
+      return
+    const animationId = Math.min(
+      this._clips.length - 1,
+      Math.round(Math.random() * this._clips.length)
+    );
+
+    this.play(animationId);
+  }
+
+  play(clipNameOrIndex, loop = LoopOnce$1, repeat = 10) {
+    let clip;
+    if (typeof clipNameOrIndex === 'number') {
+      clip = this._clips[clipNameOrIndex];
+    } else {
+      clip = AnimationClip$1.findByName(this._clips, clipNameOrIndex);
     }
 
-    show(delay = 0) {
-        this._hidden = false;
-        createjs.Tween.get(this.scale ).to({x: 1, y: 1}, 600, createjs.Ease.bounceOut).wait(delay);
-    }
 
-    hide(delay=0) {
-        this._hidden = true;
-        createjs.Tween.get(this.scale ).to({x: 0, y: 0}, 600, createjs.Ease.bounceOut).wait(delay);
+    //this._mixer.timeScale = 1;
+    if (clip) {
+      const action = this._mixer.clipAction(clip);
+
+      if (
+        this._currentAction &&
+        this._currentAction.getClip().name !== clip.name
+      ) {
+        const ca = this._currentAction;
+        action.loop = loop;
+
+        action.play();
+        action.fadeIn(1.2);
+        ca.fadeOut(1.2);
+
+        setTimeout((_) => ca.stop(), 2000);
+      } else {
+        action.loop = loop;
+        action.play();
+      }
+      this._currentClip = clip;
+      this._currentAction = action;
     }
+  }
+
+  playSound(audioIndex, syncClip = -1) {
+    if (this._sounds[audioIndex]) {
+      this._syncClip = syncClip;
+      this._sound.src = this._sounds[audioIndex];
+      this._sound.play();
+    }
+  }
+
+  update(delta, elapse = 0, md = undefined) {
+    if (this.mesh) ;
+    this._mixer.update(delta);
+  }
+
+  async loadTracks(scene) {
+    return this.__loadAnimations(scene, true)
+  }
+
+  __faceIndex(actions = "idle") {
+    return
+  }
 }
+
+const SpriteTexture = async (target, src) => {
+  const texture = await new TextureLoader$1().load(src);
+  texture.flipY = false;
+  return texture;
+};
+
+let loadScreen;
+// setup three js function
+// usage ie:
+// var scene = await setupScene('#app', [id_name_for_canvas], [optional config = {}])
+// if (scene) {s
+//    ...start the scene etc
+// }
+
+const createLoadScreen = () => {
+  loadScreen = document.querySelector("#overlay");
+  const prog = loadScreen.querySelector(".prog");
+  const updateScreen = (msg) => {
+    prog.innerHTML = `<span>${msg}</span>`;
+  };
+  return { screen: loadScreen, fn: updateScreen };
+};
 
 class IOCScene extends Emitter {
     constructor() {
@@ -52487,10 +52612,15 @@ class IOCScene extends Emitter {
         btns[0].position.x -= .5;
         btns[0].state = 0;
         btns[1].state = 0;
+        
         btns[1].position.x += .5;
         this._group.add(btns[0]);
         this._group.add(btns[1]);
         this._buttons = btns;
+        return this._group;
+    }
+
+    get GUIGroup() {
         return this._group;
     }
 
@@ -52503,7 +52633,7 @@ class IOCScene extends Emitter {
         this._buttons.forEach((b, i)=>{
             const s = b.state;
             if (this._state === s) {
-                b.show( i * 50);
+                b.show( i * 500);
             } else {
                 b.hide(i * 50);
             }
@@ -92939,6 +93069,7 @@ class IOCScene extends Emitter {
  *
  */
 
+
 const Assets = {
   models: [
     "/models/ioc/building2.glb",
@@ -92959,6 +93090,7 @@ const TerminalStartPos = JSON.parse(data);
 
 const iocScene = new IOCScene();
 let pointer;
+let index = 0;
 const ledMats = [];
 const init = async () => {
   // configure UI
@@ -93055,7 +93187,7 @@ const setupVideoPanel = async () => {
   ledMats[1].material = new MeshBasicMaterial$1({ map: videoMat });
   videoT.play();
 };
-
+let speech = new TTS({voice: 0});
 document.body.onload = async (evt) => {
   await init();
   window.addEventListener('keydown', (e) => {
@@ -93068,8 +93200,21 @@ document.body.onload = async (evt) => {
     } else if (e.key === 'x') {
       SceneManager.tomi.playSound(1, 1);
       // SceneManager.tomi.playSound(0);
-    }
-  });
+    } else if(e.key === 'y') {
+      //
+      const text = `Hey there, welcome to our Virtual Network Operations Centre, NOC for short. My name is TOMI, that’s Too much information, too much intelligence, and too much imagination...but hey, what is an AI bot to do!!? My job today is to take you nice folks on a virtual journey of our IOC and cybersecurity. There is lots to do so I will keep it high level. Feel free to wander around and when you are ready, please make your selection. Have fun!`;
+      
+      SceneManager.speak(text);
+        
+      
+    // speech.speak(text)
+    } else if(e.key === 'z') {
+      index++;
+      // speech.speech.pitch += 0.1;
+      speech.speech.voice = speech.voices[index];
+      console.log(`${speech.voice.name}`);
+    }else if(e.key == 'u') ;
+  }); 
 };
 
 export { Assets };

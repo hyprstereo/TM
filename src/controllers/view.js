@@ -3,6 +3,7 @@ import { SETTINGS, setupControls, setupScene } from "./config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "./config.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
+import { TTS } from "../utils/tts.js";
 
 class SceneManagerImpl extends Emitter {
   constructor() {
@@ -18,6 +19,12 @@ class SceneManagerImpl extends Emitter {
     this.tomi;
     this.assets = {};
     this._loader = new GLTFLoader();
+    this.speech =  new TTS({voice: 0});
+    this._reflect;//  = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
+  }
+
+  speak(txt) {
+    this.speech.speak(txt);
   }
 
   async setup(target = "#app", props = undefined) {
@@ -26,6 +33,10 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
+      const cube = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
+      cube.needsUpdate = true;
+      this._reflect = new THREE.CubeCamera(.1, 1000, cube);
+      this.scene.background = this._reflect;
 
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
@@ -55,6 +66,7 @@ class SceneManagerImpl extends Emitter {
   _onResize(e) {
     const parent = this.renderer.domElement
     const w = parent.offsetWidth || parent.clientWidth;
+    
     const h = parent.offsetHeight || parent.clientHeight;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -125,10 +137,15 @@ class SceneManagerImpl extends Emitter {
     const elapsed = this.clock.getElapsedTime();
     this.emit("beforeRender", delta, elapsed);
     if (this.tomi) this.tomi.update(delta);
+    if (this._reflect) {
+        this._reflect.update(this.renderer, this.scene)
+    }
     if (this.controls) this.controls.update();
+     this.camera.ta
     if (this.composer) {
       this.composer.render();
     } else {
+      
       // this.renderer.render(this.scene, this.camera)
     }
 
