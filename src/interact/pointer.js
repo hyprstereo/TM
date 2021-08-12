@@ -1,22 +1,17 @@
 import {
-  Box3,
-  Box3Helper,
-  Layers,
-  Object3D,
   Raycaster,
   Vector2,
 } from "../build/three.module.js";
 import Emitter from "../events/emitter.js";
-import { InteractiveObject, PointerStates } from "./interactiveobject.js";
 
 export class Pointer3D extends Emitter {
-  constructor(camera, scene, context, layerId = 6) {
+  constructor(camera, scene, context, target = undefined, layerId = 6) {
     super();
     this.selectedObjects = [];
     this.cursor = new Vector2();
     this.raycaster = new Raycaster();
-   // this.raycaster.layers.enableAll()
-   this.raycaster.layers.disableAll()
+    this._target = target || scene;
+    this.raycaster.layers.disableAll()
     this.raycaster.layers.enable(layerId);
     this._enable = true;
     this._cam = camera;
@@ -36,7 +31,7 @@ export class Pointer3D extends Emitter {
       );
       this._listener.addEventListener(
         'pointerdown',
-       this.onPointerTouch.bind(this));
+        this.onPointerTouch.bind(this));
     } else {
       this._listener.removeEventListener(
         "pointermove",
@@ -55,12 +50,13 @@ export class Pointer3D extends Emitter {
 
   chkIntersection() {
     this.raycaster.setFromCamera(this.cursor, this._cam);
-    const objects = this.raycaster.intersectObject(this._scene, true);
+    const objects = this.raycaster.intersectObject(this._target, true);
 
     if (objects.length > 0) {
       const selectedObject = objects[0].object;
       this.addSelected(selectedObject);
-     
+    } else {
+      this.selectedObjects = [];
     }
   }
 
@@ -70,7 +66,7 @@ export class Pointer3D extends Emitter {
     // this.cursor.y = (event.clientY / window.innerHeight) * 2 + 1;
     // this.chkIntersection();
     // this.emit("pointermove", this.cursor);
-   // this.emit("hover", this.selectedObjects);
+    // this.emit("hover", this.selectedObjects);
   }
 
   onPointerTouch(event) {
@@ -106,7 +102,7 @@ export class PickHelper {
       this.pickedObject.material.emissive.setHex(this.pickedObjectSavedColor);
       this.pickedObject = undefined;
     }
- 
+
     // cast a ray through the frustum
     this.raycaster.setFromCamera(normalizedPosition, camera);
     // get the list of objects the ray intersected

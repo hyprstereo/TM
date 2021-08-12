@@ -5,6 +5,8 @@ import { reflects, SETTINGS } from "../scene/config.js";
 import { GLTFExporter } from "../jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
+import { SpriteLayer } from "../objects/sprites.js";
+import { SceneManager } from "../controllers/view.js";
 
 
 export const Assets = [
@@ -57,7 +59,7 @@ export const LoadAssets = async (
         file,
         (asset) => {
           let model = asset.scene || asset;
-          assets.push(model);
+          assets.push(model);//Mesh011_2.012
           if (name == "nulls") {
             tablePositions = getPositions(model.children[0], scene);
           } else {
@@ -186,6 +188,8 @@ const setupTables = (model, scene, exportFile = false) => {
 
 export const setupScreens = (tablesSet, scene = undefined) => {
   const iTables = [];
+
+
   //fixMaterials(model, true);
   const keyboard = new THREE.MeshLambertMaterial({
     color: 0x59f4f6,
@@ -197,6 +201,17 @@ export const setupScreens = (tablesSet, scene = undefined) => {
     color: 0xffffff,
   });
   const screen2 = screen.clone();
+
+  const mon = screen.clone();
+  
+  SceneManager.ioc.screenMonitorVideo('/video/ioc/Ioc_01_journey.mp4')
+    .then( monitorTexture => {
+      
+      mon.map = monitorTexture;
+      mon.side = THREE.DoubleSide;
+  })
+  .catch(err => console.error(err));
+  
 
   const lt = new THREE.TextureLoader();
   lt.load("../../ui/ioc/screen/a15.png", (t) => {
@@ -217,16 +232,6 @@ export const setupScreens = (tablesSet, scene = undefined) => {
       const child = node;
 
       if (node.type === "Mesh") {
-
-
-        // const phongMaterial = new THREE.MeshPhongMaterial({
-        //   color: 0xffffff,
-        //   specular: 0x111111,
-        //   shininess: 5,
-        // });
-        // child.material = phongMaterial;
-        // child.receiveShadow = true;
-        // child.castShadow = true;
         if (node.name.startsWith('Scene0')) {
           node.userData =  node.userData = { ...data, id: node.name, child: node.children };
         }
@@ -234,7 +239,16 @@ export const setupScreens = (tablesSet, scene = undefined) => {
           node.material.side = THREE.DoubleSide;
         } else if (node.material.name.startsWith("screen_monitor")) {
           reflects.push(node);
-          node.material = counter % 2 == 0 ? screen : screen2;
+         // node.layers.set(SpriteLayer);
+         console.log('ba', node.name);
+          if (node.name  ==='Mesh011_2012') {
+           
+            node.material = mon;
+            //node.scale.z *= -1;
+            //monitorTexture.needsUpdate = true;
+          } else {
+            node.material = counter % 2 == 0 ? screen : screen2;
+          }
         } else if (node.name.startsWith("keyboard")) {
           if (!keyboard.map) {
             keyboard.map = node.material.map;

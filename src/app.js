@@ -11,35 +11,44 @@
  */
 
 import { createLoadScreen, loadAsset } from "./controllers/ioc.js";
+import { Facial, Eyes, Mouths } from './controllers/tomi.facial.js';
 import { SceneManager } from "./controllers/view.js";
 import { setupScreens } from "./scene/props.js";
-import { TOMIController } from "./controllers/tomi.controller.js";
+import { TOMIController, TomiFace } from "./controllers/tomi.controller.js";
 import { IOCScene } from "./scene/ioc.js";
-import { MeshBasicMaterial, MeshNormalMaterial, VideoTexture } from "./build/three.module.js";
+import { MeshBasicMaterial, MeshNormalMaterial, Scene, VideoTexture } from "./build/three.module.js";
 import { createVideoElement } from "./interact/pano.js";
 import { Vector3 } from "../web/js/build/three.module.js";
 import { Pointer3D } from "./interact/pointer.js";
 import { SpriteLayer } from "./objects/sprites.js";
 import { TTS } from "./utils/tts.js";
+import tomiFacial from "./controllers/tomi.facial.js";
 
-
-export const Assets = {
-  models: [
-    "/models/ioc/building2.glb",
-    "/models/ioc/tables.glb",
-    "/models/ioc/screens.gltf",
-    "/models/tomi/tomi.gltf",
-    // "/models/tomi/idle.gltf",
-    // "/models/tomi/long.gltf",
-    // "/models/tomi/ioc-agility.gltf",
-    // "/models/tomi/ioc-competitive.gltf",
-    // "/models/tomi/ioc-cost.gltf",
-    // "/models/tomi/ioc-enablement.gltf"
-  ],
-  textures: ["/"],
-};
 const data = `[{"x":2.7743569797405185,"y":1.4582135855654905,"z":-3.0594612648676645},{"_x":-2.966433655861033,"_y":0.03200187598513606,"_z":3.135930225859582,"_order":"XYZ"}]`
-const TerminalStartPos = JSON.parse(data);
+export const SceneConfig = {
+  StartPos: { x: 0, y: 0, z: 0 },
+  TomiInitialPosition: { x: 2.786939482308075, y: 0, y: -0.51 },
+  TerminalPosition: JSON.parse(data),
+  Assets: {
+    Audio: [
+      '/cm_audio/0_Benefits01NEW.mp3',
+      '/cm_audio/0_BenefitsAgility.mp3',
+      '/cm_audio/0_BenefitsCompetitive.mp3',
+      '/cm_audio/0_BenefitsCost.mp3'
+    ],
+    Video: [
+
+    ],
+    Models: [
+      "/models/ioc/building2.glb",
+      "/models/ioc/tables.glb",
+      "/models/ioc/screens.gltf",
+      "/models/tomi/tomi-base-4.glb",
+      // "/models/tomi/tomi-4.glb",
+      "/models/tomi/tomi_4.0.1.glb",
+    ]
+  }
+}
 
 const iocScene = new IOCScene();
 let pointer;
@@ -53,11 +62,10 @@ const init = async () => {
   const build = await SceneManager
     .setup("#app")
     .then((r) => r);
-  
-  pointer = new Pointer3D(build.camera, build.scene, build.renderer.domElement, SpriteLayer);
-  pointer.on('hover', (e) => {
-    console.log(e);
-  })
+
+  pointer = new Pointer3D(build.camera, build.scene, build.renderer.domElement, null, SpriteLayer);
+  iocScene.bindPointer(pointer);
+  SceneManager.ioc = iocScene;
   let id = 0;
   SceneManager.on("loadbegin", (e) => console.log("begin", e));
   SceneManager.on("loadprogress", (e) => console.log("progress", e));
@@ -68,15 +76,14 @@ const init = async () => {
       setupScreens(model, SceneManager.scene);
     } else if (id == 3) {
       SceneManager.tomi = new TOMIController(e);
-      SceneManager.tomi.addSound(
-        '',
-        '/cm_audio/0_Benefits01NEW.mp3',
-        '/cm_audio/0_BenefitsAgility.mp3',
-        '/cm_audio/0_BenefitsCompetitive.mp3',
-        '/cm_audio/0_BenefitsCost.mp3'
-      );
+      // SceneManager.tomi.addSound(
+      //   ...SceneConfig.Assets.Audio
+      // );
       SceneManager.scene.add(SceneManager.tomi);
-      SceneManager.tomi.position.set(2.786939482308075, 0, -0.51);
+      SceneManager.tomi.position.set(
+        SceneConfig.TomiInitialPosition.x,
+        SceneConfig.TomiInitialPosition.y,
+        SceneConfig.TomiInitialPosition.z);
     } else if (id >= 4) {
       SceneManager.tomi.__loadAnimations(e, true);
     } else {
@@ -103,30 +110,36 @@ const init = async () => {
 
   SceneManager.on("loadfinished", async () => {
     // create the content layer
+    SceneManager.tomi.showProps(true);
     const content = await iocScene.create().then(obj => obj);
     SceneManager.scene.add(content);
-    const btnPos = new Vector3(TerminalStartPos[0].x, TerminalStartPos[0].y+.3, TerminalStartPos[0].z+1.78 );
+    const btnPos = new Vector3(SceneConfig.TerminalPosition[0].x, SceneConfig.TerminalPosition[0].y + .3, SceneConfig.TerminalPosition[0].z + 1.78);
     content.position.copy(btnPos);
     setupVideoPanel();
+    svgTest('#app');
     // start the scene
-    SceneManager.play();
-    SceneManager.tomi.play(0);
+
+      SceneManager.play();
+   
+   
     anime({
       targets: '#overlay',
       opacity: 0,
     });
     SceneManager.camera.layers.enableAll();
     const pos = SceneManager.tomi.position.clone();
-    SceneManager.camera.position.copy(TerminalStartPos[0]);
-    SceneManager.camera.rotation.copy(TerminalStartPos[1]);
-    //SceneManager.controls.lookAt(pos)
+    SceneManager.camera.position.copy(SceneConfig.TerminalPosition[0]);
+    SceneManager.camera.rotation.copy(SceneConfig.TerminalPosition[1]);
+
     pos.y = 1;
     SceneManager.tomi.mesh.position.y = 1.4001;
     SceneManager.controls.lookAt(pos);
+    SceneManager.controls.c.screenSpacePanning = true;
     SceneManager.tomi.lookAt(SceneManager.camera.position);
+
   });
   SceneManager
-    .loadAssets(Assets.models)
+    .loadAssets(SceneConfig.Assets.Models)
     .then((completed) => {
       res(completed);
     });
@@ -140,8 +153,8 @@ const setupVideoPanel = async () => {
   ledMats[1].material = new MeshBasicMaterial({ map: videoMat });
   videoT.play();
 }
-let speech = new TTS({voice: 0})
-let  pi = 1
+let speech = new TTS({ voice: 0 })
+let pi = 1
 document.body.onload = async (evt) => {
   await init();
   window.addEventListener('keydown', (e) => {
@@ -152,23 +165,33 @@ document.body.onload = async (evt) => {
     } else if (e.key == 'p') {
       const a = JSON.stringify([SceneManager.camera.position, SceneManager.camera.rotation]);
     } else if (e.key === 'x') {
-      SceneManager.tomi.playSound(1, 1);
+      SceneManager.tomi
+        .loadSound(SceneConfig.Assets.Audio[0])
+        .then((audio)=>{
+          console.log('starts', audio);
+        });
       // SceneManager.tomi.playSound(0);
-    } else if(e.key === 'y') {
+    } else if (e.key === 'y') {
       //
-      const text = `Hey there, welcome to our Virtual Network Operations Centre, NOC for short. My name is TOMI, that’s Too much information, too much intelligence, and too much imagination...but hey, what is an AI bot to do!!? My job today is to take you nice folks on a virtual journey of our IOC and cybersecurity. There is lots to do so I will keep it high level. Feel free to wander around and when you are ready, please make your selection. Have fun!`;
-      
-      SceneManager.speak(text);
-        
-      
-    // speech.speak(text)
-    } else if(e.key === 'z') {
+      SceneManager.tomi.action("intro")
+
+      // speech.speak(text)
+    } else if (e.key === 'z') {
       index++;
       // speech.speech.pitch += 0.1;
       speech.speech.voice = speech.voices[index];
       console.log(`${speech.voice.name}`)
-    }else if(e.key == 'u') {
-      pi += 0.1;
+    } else if (e.key == 'u') {
+      const face = SceneManager.tomi.face;
+      let f = face.states[Math.min(face.states.length - 1, Math.round(Math.random() * face.states.length - 1))];
+      if (!f) f = 'grin';
+      face.setState(f)
     }
-  }); 
+  });
 };
+
+
+const svgTest = (id = '#app') => {
+  document.body.appendChild(TomiFace.svg);
+
+}

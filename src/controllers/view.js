@@ -1,5 +1,5 @@
 import * as THREE from "../build/three.module.js";
-import { SETTINGS, setupControls, setupScene } from "./config.js";
+import {  setupControls, setupScene } from "./config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "./config.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
@@ -21,6 +21,7 @@ class SceneManagerImpl extends Emitter {
     this._loader = new GLTFLoader();
     this.speech =  new TTS({voice: 0});
     this._reflect;//  = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
+    this.ioc;
   }
 
   speak(txt) {
@@ -33,10 +34,11 @@ class SceneManagerImpl extends Emitter {
       this.camera = build.camera;
       this.renderer = build.renderer;
       this.scene = build.scene;
-      const cube = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
-      cube.needsUpdate = true;
-      this._reflect = new THREE.CubeCamera(.1, 1000, cube);
-      this.scene.background = this._reflect;
+     // const cube = new THREE.WebGLCubeRenderTarget( 128, { format: THREE.RGBFormat, generateMipmaps: true, minFilter:THREE.LinearMipmapLinearFilter } );
+      ////cube.needsUpdate = true;
+     // this._cubeTexture = new THREE.RenderT
+//this._reflect = new THREE.CubeCamera(.1, 1000, cube);
+     // this.scene.background = this._reflect;
 
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
@@ -136,12 +138,10 @@ class SceneManagerImpl extends Emitter {
     const delta = this.clock.getDelta();
     const elapsed = this.clock.getElapsedTime();
     this.emit("beforeRender", delta, elapsed);
-    if (this.tomi) this.tomi.update(delta);
-    if (this._reflect) {
-        this._reflect.update(this.renderer, this.scene)
-    }
+    if (this.tomi) this.tomi.update(delta, elapsed);
+
     if (this.controls) this.controls.update();
-     this.camera.ta
+     
     if (this.composer) {
       this.composer.render();
     } else {

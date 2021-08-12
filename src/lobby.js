@@ -1,8 +1,4 @@
 import { create360 } from "./controllers/360.js";
-import { createLoadScreen, loadAsset } from "./controllers/ioc.js";
-import { SceneManager } from "./controllers/view.js";
-import { setupScreens } from "./scene/props.js";
-import { TOMIController } from "./controllers/tomi.controller.js";
 
 export const Assets = {
     models: [
