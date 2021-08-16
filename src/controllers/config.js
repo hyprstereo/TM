@@ -18,6 +18,7 @@ import { panoControl } from "../interact/pano.js";
 import Emitter from "../events/emitter.js";
 import { TTS } from "../utils/tts.js";
 import { Vector2 } from "../build/three.module.js";
+import { Selects } from "../interact/pointer.js";
 
 export let reflects = [];
 
@@ -268,12 +269,6 @@ export const setupScene = async (
     const canvas = renderer.domElement;
 
     parentEl.appendChild(canvas);
-    let stats;
-    if (config.showStats) {
-      stats = new Stats();
-      stats.showPanel(0);
-      document.body.appendChild(stats.dom);
-    }
     camera.lookAt(0.5, 1, 0);
 
     const composer = postEffects(renderer, scene, camera);
@@ -281,7 +276,6 @@ export const setupScene = async (
       scene,
       renderer,
       camera,
-      stats,
       composer,
     };
     //SceneManager.instance.createLightProbe(scene, renderer);
@@ -423,10 +417,9 @@ export const postEffects = (
 
   let outline;
   if(SETTINGS.outlined) {
-    let selects = [];
-    const outlinePass = new OutlinePass(dim, scene, camera, selects);
+    const outlinePass = new OutlinePass(dim, scene, camera, Selects.child);
     outlinePass.edgeThickness = 2;
-    outline = {selects: selects, pass: outlinePass}
+    outline = {selects:  Selects.child, pass: outlinePass}
     composer.addPass(outlinePass);
   }
 

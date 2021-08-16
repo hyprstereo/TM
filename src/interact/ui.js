@@ -29,3 +29,13 @@ const loadSprites = async (...src) => {
         next();
     });
 }
+
+export const setupEditor = (target = undefined) => {
+    const w3 = document.createElement('link');
+    w3.rel = 'stylesheet';
+    w3.href = '/css/w3.css';
+    const head =document.getElementsByTagName('head')[0];
+    head.appendChild(w3);
+}
+
+export const EditMode = true;

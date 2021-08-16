@@ -1,6 +1,7 @@
 import * as THREE from "../build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
 import { OrbitControls } from "../jsm/controls/OrbitControls.js";
+import { SceneManager } from "../controllers/view.js";
 
 export const isVideo = (src) => {
   return src.endsWith(".webm") || src.endsWith(".mp4") || src.endsWith(".mov");
@@ -17,11 +18,11 @@ export const createVideoElement = async (...videoSrc) => {
       video.appendChild(source);
     });
     video.style.display = "none";
-    video.crossOrigin = "anonymous";
+    //video.crossOrigin = "anonymous";
 
     video.autoplay = true;
-    video.onload = () => resolve(video);
-    video.onerror = (e) => rej(null);
+    // video.onload = () => resolve(video);
+    // video.onerror = (e) => rej(null);
     resolve(video);
   });
 };
@@ -90,6 +91,7 @@ export class panoControl extends THREE.EventDispatcher {
     this._maxDistance = this.c.maxDistance;
     this.c.screenSpacePanning = false;
     this.c.enablePan = true;
+    this._lockTarget = null;
     return this;
   }
 
@@ -130,6 +132,10 @@ export class panoControl extends THREE.EventDispatcher {
     return this._locked;
   }
 
+  lockOnTarget(target) {
+    this._lockTarget = target;
+  }
+
   lock() {
     this._locked = true;
     this.dispatchEvent({ type: "lock" });
@@ -145,7 +151,16 @@ export class panoControl extends THREE.EventDispatcher {
   }
 
   onRender(ms = 0) {
+    if (this._lockTarget) {
+      const pos = this._lockTarget.position.clone();
+      this.camera.lookAt(pos);
+    }
     this.c.update();
+  }
+
+  moveTo(target, delay=0, complete = undefined) {
+    let pos = target.clone();
+    createjs.Tween.get(this.camera.position, {onComplete: complete}).wait(delay).to(pos, 1200);
   }
 }
 

@@ -39,7 +39,7 @@ class SceneManagerImpl extends Emitter {
      // this._cubeTexture = new THREE.RenderT
 //this._reflect = new THREE.CubeCamera(.1, 1000, cube);
      // this.scene.background = this._reflect;
-
+     
       setupLightings(this.scene);
       const { composer, fxaa } = postEffects(
         this.renderer,

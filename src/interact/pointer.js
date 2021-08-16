@@ -2,23 +2,32 @@ import {
   Raycaster,
   Vector2,
 } from "../build/three.module.js";
+import { SceneManager } from "../controllers/view.js";
 import Emitter from "../events/emitter.js";
+import { SpriteButton, SpriteLayer } from "../objects/sprites.js";
 
+export const Selects = {
+  child: []
+};
 export class Pointer3D extends Emitter {
-  constructor(camera, scene, context, target = undefined, layerId = 6) {
+  constructor(camera, scene, context, target = undefined, layerId = 6, outline = undefined, hover = true) {
     super();
     this.selectedObjects = [];
     this.cursor = new Vector2();
     this.raycaster = new Raycaster();
     this._target = target || scene;
-    this.raycaster.layers.disableAll()
-    this.raycaster.layers.enable(layerId);
+    this.raycaster.layers.disableAll();
+    this.raycaster.layers.enable(SpriteLayer);
+    this.raycaster.layers.enable(6);
     this._enable = true;
     this._cam = camera;
     this._scene = scene;
     this._listener = context;
     this._layerId = layerId;
     this.enabled = this._enable;
+    this._pointerDown = false;
+    this._outline = outline;
+    this._hover = hover;
   }
 
   set enabled(s) {
@@ -32,49 +41,86 @@ export class Pointer3D extends Emitter {
       this._listener.addEventListener(
         'pointerdown',
         this.onPointerTouch.bind(this));
+      this._listener.addEventListener(
+        'pointerup',
+        this.onPointerUp.bind(this));
     } else {
       this._listener.removeEventListener(
         "pointermove",
         this.onPointerMove.bind(this)
+      );
+      this._listener.removeEventListener(
+        "pointerdown",
+        this.onPointerDown.bind(this)
+      );
+      this._listener.removeEventListener(
+        "pointerup",
+        this.onPointerUp.bind(this)
       );
       // this._listener.
     }
   }
 
   addSelected(object) {
-
     this.selectedObjects = [];
+    if (!(object instanceof SpriteButton))
+      Selects.child = [object];
+
     this.selectedObjects.push(object);
 
   }
 
   chkIntersection() {
-    this.raycaster.setFromCamera(this.cursor, this._cam);
-    const objects = this.raycaster.intersectObject(this._target, true);
+    const intersects = this.pick();
+    if (intersects.length > 0) {
+      const res = intersects[0];
+      if (res.object instanceof SpriteButton) {
+        this.emit('buttonselected', res.object);
+      }
+      this.addSelected(res.object);
 
-    if (objects.length > 0) {
-      const selectedObject = objects[0].object;
-      this.addSelected(selectedObject);
     } else {
       this.selectedObjects = [];
     }
   }
 
+  pick() {
+    this.raycaster.setFromCamera(this.cursor, SceneManager.camera);
+    const intersects = this.raycaster.intersectObject(this._target, true);
+    const results = intersects.filter((res) => res && res.object);
+    return results;
+  }
+
   onPointerMove(event) {
-    // if (!event.isPrimary) return;
-    // this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
-    // this.cursor.y = (event.clientY / window.innerHeight) * 2 + 1;
-    // this.chkIntersection();
-    // this.emit("pointermove", this.cursor);
-    // this.emit("hover", this.selectedObjects);
+    if (!event.isPrimary) return;
+    this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.cursor.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    if (this._outline || this._hover) {
+      if (this._pointerDown && this.selectedObjects.length <= 0) return;
+      this.chkIntersection();
+      if (this._outline) this._outline.selects = [this.selectedObjects];
+
+      this._listener.style.cursor = (this.selectedObjects.length) ? 'pointer' : 'default';
+      this.emit("pointermove", { pos: this.cursor, objects: this.selectedObjects });
+    }
+
   }
 
   onPointerTouch(event) {
     if (!event.isPrimary) return;
+    this._pointerDown = true;
     this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.cursor.y = (event.clientY / window.innerHeight) * 2 + 1;
+    this.cursor.y = -(event.clientY / window.innerHeight) * 2 + 1;
     this.chkIntersection();
-    this.emit("pointertouch", this.cursor);
+    this.emit("pointertouch", { pos: this.cursor, objects: this.selectedObjects });
+  }
+
+  onPointerUp(event) {
+    if (!event.isPrimary) return;
+    this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.cursor.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    this.emit("pointerup", { pos: this.cursor, objects: this.selectedObjects });
+    this._pointerDown = false;
   }
 }
 

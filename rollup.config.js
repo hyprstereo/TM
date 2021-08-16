@@ -1,20 +1,16 @@
+import svg from 'rollup-plugin-svg'
+
 export default {
-  excludes: "node_modules/**",
   input: "./src/app.js",
-  output: {
-    dir: "../dist/build",
-    file: "tm.one.js",
-    format: "cjs",
-  },
-
-
-  input: "./src/app.js",
-  external: ['lodash', 'THREE', 'createjs'],
+  external:["node_modules/**", "build/**", "THREE", "lodash"],
   output: [
     {
       file: "./public/app/tm.one.js",
     },
   ],
+  plugins: [
+    svg(),
+  ]
 };
 
 // plugin

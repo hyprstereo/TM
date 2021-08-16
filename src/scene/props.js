@@ -5,8 +5,8 @@ import { reflects, SETTINGS } from "../scene/config.js";
 import { GLTFExporter } from "../jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
-import { SpriteLayer } from "../objects/sprites.js";
 import { SceneManager } from "../controllers/view.js";
+import { SpriteLayer } from "../objects/sprites.js";
 
 
 export const Assets = [
@@ -34,6 +34,7 @@ const propsMonitor = {
   name: "monitor",
   w: 0.855898,
 };
+
 
 const tableMat = {};
 export const LoadAssets = async (
@@ -72,7 +73,9 @@ export const LoadAssets = async (
                 model.name = name;
                 //ßscene.add(model);
                 if (name.startsWith("table")) {
-                  setupScreens(model, scene);
+                  if (setupScreens(model, scene)) {
+                    
+                  }
                   //fixMaterials(model);
                 } else if (name.startsWith("tomi")) {
                   const ts = new THREE.Box3().setFromObject(model);
@@ -115,7 +118,7 @@ export const LoadAssets = async (
                       ) {
                         console.log(m.material);
                         if (!shd) {
-                          shd = new THREE.MeshMatCapMaterial({
+                          shd = new THREE.MeshPhongMaterial({
                             map: m.material.map,
                           });
                         }
@@ -185,8 +188,13 @@ const setupTables = (model, scene, exportFile = false) => {
 
   return tGroup;
 };
-
+export const GlobalProps = {
+  Chair: null,
+  Monitor: null,
+  Table: null
+}
 export const setupScreens = (tablesSet, scene = undefined) => {
+  let selected = false;
   const iTables = [];
 
 
@@ -237,15 +245,19 @@ export const setupScreens = (tablesSet, scene = undefined) => {
         }
         if (node.name.startsWith("dus")) {
           node.material.side = THREE.DoubleSide;
+        } else if (node.name.startsWith('Mesh016_2012')) {
+          GlobalProps.chair = node;
+          node.layers.set(6);
         } else if (node.material.name.startsWith("screen_monitor")) {
           reflects.push(node);
-         // node.layers.set(SpriteLayer);
-         console.log('ba', node.name);
+         
           if (node.name  ==='Mesh011_2012') {
-           
+            GlobalProps.Monitor = node;
+            SceneManager.ioc.selectedMonitor(node);
+            selected = true;
             node.material = mon;
-            //node.scale.z *= -1;
-            //monitorTexture.needsUpdate = true;
+           
+            node.material.side = THREE.DoubleSide;
           } else {
             node.material = counter % 2 == 0 ? screen : screen2;
           }
@@ -257,8 +269,9 @@ export const setupScreens = (tablesSet, scene = undefined) => {
           node.material = keyboard;
         } else if (node.name.startsWith("table_geo")) {
           reflects.push(node);
-
-
+          if (node.name == 'table_geo_000001012') {
+           // node.layers.set(SpriteLayer);
+          }
         }
         
         node.castShadow = node.receiveShadow = true;
@@ -270,6 +283,7 @@ export const setupScreens = (tablesSet, scene = undefined) => {
       counter++;
     });
   });
+  return selected
 };
 
 const colTables = (target, count = 6, size = 0, offset = 1) => {
@@ -368,8 +382,8 @@ const fixMaterials = (asset, shadow = false) => {
   });
 };
 
-export function loadTextures(...src) {
-  return new Promise((res,rej) =>{
+export async function loadTextures(...src) {
+  return await new Promise((res,rej) =>{
     const textures = [];
     const loader = new THREE.TextureLoader()
     let i = 0;
@@ -478,6 +492,7 @@ export const ExportToGLTF = async (name, ...obj) => {
     exporter.parse(obj, (gltf) => {
       console.log("exported", name, gltf);
       SaveString(gltf, name);
+      res(gltf);
     });
   });
 };

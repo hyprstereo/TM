@@ -416,6 +416,19 @@ export const postEffects = (
     params.saoBlurDepthCutoff = 0.01;
   }
 
+  let outline;
+  if(SETTINGS.outlined) {
+    
+    const outlinePass = new OutlinePass(dim, scene, camera, SceneManager._objects);
+    outlinePass.edgeThickness = 1;
+    outlinePass.edgeStrength = 3;
+    outlinePass.visibleEdgeColor = 0xffffff;
+    
+    outline = {selects: SceneManager._objects, pass: outlinePass}
+    composer.addPass(outlinePass);
+  }
+
+
   let blooms;
   let fxCopy;
   if (SETTINGS.bloom && !isMobile()) {
@@ -427,14 +440,6 @@ export const postEffects = (
   }
   composer.addPass(renderPass);
 
-  let outline;
-  if(SETTINGS.outlined) {
-    let selects = [];
-    const outlinePass = new OutlinePass(dim, scene, camera, selects);
-    outlinePass.edgeThickness = 2;
-    outline = {selects: selects, pass: outlinePass}
-    composer.addPass(outlinePass);
-  }
 
   if (fxCopy) {
     composer.addPass(fxCopy);

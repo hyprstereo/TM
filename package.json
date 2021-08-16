@@ -73,7 +73,7 @@
   "devependencies": {},
   "scripts": {
     "serve": "npx rollup -c && node index.js",
-    "static" : "node index.js",
+    "static": "node index.js",
     "test": "echo \"Error: no test speci0fied\" && exit 1"
   },
   "repository": {
@@ -85,5 +85,9 @@
   "bugs": {
     "url": "https://github.com/hyprstereo/TM/issues"
   },
-  "homepage": "https://github.com/hyprstereo/TM#readme"
+  "homepage": "https://github.com/hyprstereo/TM#readme",
+  "dependencies": {
+    "fabric": "^4.5.1",
+    "rollup-plugin-svg": "^2.0.0"
+  }
 }

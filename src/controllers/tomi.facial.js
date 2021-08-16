@@ -1,5 +1,6 @@
 import * as THREE from "../build/three.module.js";
-import { render } from "./ioc.js";
+import TomiFaceSVG from '../assets/svg/frags_1.svg';
+
 const s = `<animate
 attributeName="d"
 dur="250ms"
@@ -10,74 +11,55 @@ M178.43,148.71c13,.7,24.4,9.1,33.6,21.1,2.2,2.8,2.8,6.1.1,9.1-3,3.2-6.5,3.1-9.8.
 "/>`
 const FaceBase = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352.02 352.02">
 <defs><style>
-.cls-1{fill:#59F4F6;}
+.cls-1{display:none;}
+.cls-2{fill:#59F4F6;}
 </style></defs>
-<g id="Layer_2" data-name="Layer 2"><g id="Layer_1-2" data-name="Layer 1">
-<path id="left" class="cls-1" d="M64.6.14c34.4-1.9,64.4,27.6,64.1,61.2-.3,35.4-29.4,61.6-64.2,61.8-33.9.2-64.3-26-64.5-62.3C-.2,28.34,31.1-2.36,64.6.14Z"/>
-<path id="mouth" class="cls-1" fill="#7fd0dc" transform="translate(10 0)" d="M 182.2 146.6
-Q 175.9 146.636328125 168.6 146.55 161.35 146.4994140625 155.55 146.1 149.8 145.7607421875 141.3 145.1 132.8 144.4380859375 128.95 145.25 125.15 146.05390625 122.7 150 118.65 156.7 123.15 163.2 138.2 184.8 159.35 184.65 160.9 184.7 162.4 184.6 178.3 183.7 191.55 170.05 194.45 167 196.15 162.3 200.2 150.7453125 194.35 148.65 188.55 146.5634765625 182.2 146.6 Z"/>
-<path id="right" transform="translate(346 0), scale(-1 1)" class="cls-1" d="M64.6.14c34.4-1.9,64.4,27.6,64.1,61.2-.3,35.4-29.4,61.6-64.2,61.8-33.9.2-64.3-26-64.5-62.3C-.2,28.34,31.1-2.36,64.6.14Z"/>
-</g>
-</g></svg>`;
-export const Eyes = {
-    default: `M64.6.14c34.4-1.9,64.4,27.6,64.1,61.2-.3,35.4-29.4,61.6-64.2,61.8-33.9.2-64.3-26-64.5-62.3C-.2,28.34,31.1-2.36,64.6.14Z`,
-    happy: `M.28,61.53c-2.8-24.2,15.8-48,37.8-57.2s55.2-3.5,71.7,14.8c17.5,19.4,22,41.2,12.4,65.5a75.45,75.45,0,0,1-7.5,14c-3,4.3-7.1,6.4-13,4a210.57,210.57,0,0,0-20.8-6.8c-20-5.8-40.1-4.7-60.2-.6-9.9,2-11.2,1.7-15.7-7.3A48,48,0,0,1,.28,61.53Z`,
-    wink: `M224.15 516.2
-    Q220 517.5 213.2 520.2 201.45 525.05 199.2 525.9 202.75 530.8 208.15 539.35 212.9 546.35 216.7 549.6 253.65 581.3 292.4 581.85 332.45 582.5 369.25 549.7 382.95 537.6 391.05 520.3 399.1 503.5 400.9 483.6 402.55 466.75 400.4 442.9 398.5 423 383.2 434.8 312.8 489.65 224.15 516.2 Z`,
-    grin: `M.28,61.53c-2.8-24.2,15.8-48,37.8-57.2s55.2-3.5,71.7,14.8c17.5,19.4,22,41.2,12.4,65.5a75.45,75.45,0,0,1-7.5,14c-3,4.3-7.1,6.4-13,4a210.57,210.57,0,0,0-20.8-6.8c-20-5.8-40.1-4.7-60.2-.6-9.9,2-11.2,1.7-15.7-7.3A48,48,0,0,1,.28,61.53Z`,
-    sad: `M58,98.54c-22.5.9-48-18.6-55.9-42.4-3.9-11.9-3.1-14.5,8.4-18.8,19.9-7.5,39.9-14.8,59.8-22.3,11.8-4.4,23.6-9.1,35.3-13.6,6.6-2.5,8.7-2.1,12.4,4,11.1,18,12.8,37,3.6,56.2C109.91,86.24,89.81,98.14,58,98.54Z`,
-    serious: `M66.87,106c-30.2.2-50.5-11.8-62.2-37.1-9.5-20.6-4-48.8,11.8-65.1,4.1-4.2,7.8-4.9,13.2-2.2,13.1,6.5,26.5,12.3,39.7,18.5,16.3,7.6,32.5,15.2,48.8,22.9,9,4.2,9.6,5.5,7.9,15.4-3.7,21.8-25.1,42.9-46.9,46.3C74.37,105.5,69.37,105.8,66.87,106Z`,
-    cheeky: `M64.93.09c30-1.4,55.9,21.3,61.7,46.8,4.6,20.2.1,38.1-13.4,53.9-21.8,25.6-57.2,29.2-84.3,12.9C9.33,102-.57,83,0,59.09.83,27.19,28.93-1.81,64.93.09Zm-11.5,57.5h.4v29.9a26.86,26.86,0,0,0,.6,6.9c.8,3.6,3.2,6,6.9,6.1s6.1-2.5,6.8-6.1a32,32,0,0,0,.4-6.9c-.1-19.6-.2-39.1-.4-58.7a23.15,23.15,0,0,0-.4-5.9c-.9-3.5-3.2-6-7-6s-6.2,2.3-6.9,6a32,32,0,0,0-.4,6.9C53.33,39,53.43,48.29,53.43,57.59Z`
-}
-
-export const Mouths = {
-    default: `M175,172.74c-12.5.2-23.8-4.9-34.1-12.7-3-2.2-5.7-5-3-9.2,2.4-3.8,6.8-4.4,11.3-1.8,3.7,2.2,7.2,4.6,11.1,6.5,12,5.9,23.7,4.8,35-2,3.1-1.9,6-4.4,9.3-5.5,2-.7,5.6,0,6.9,1.5s1.4,5,.8,7.2c-.5,2-2.5,3.8-4.4,5.1C198.4,168.64,187.8,172.84,175,172.74Z`,
-    talk: `M 182.2 146.6
-    Q 175.9 146.636328125 168.6 146.55 161.35 146.4994140625 155.55 146.1 149.8 145.7607421875 141.3 145.1 132.8 144.4380859375 128.95 145.25 125.15 146.05390625 122.7 150 118.65 156.7 123.15 163.2 138.2 184.8 159.35 184.65 160.9 184.7 162.4 184.6 178.3 183.7 191.55 170.05 194.45 167 196.15 162.3 200.2 150.7453125 194.35 148.65 188.55 146.5634765625 182.2 146.6 Z`,
-    talk2: `M 179.55 165.35
-    Q 182.2 154.05 178.4 151.75 174.55 149.35 170.55 147.2 166.55 145 161.5 143.1 156.5 141.1 152.3 142.05 148.1 143.1 142.8 145.55 137.45 147.9 134.95 148.7 132.35 149.5 130.75 153.3 128.05 159.95 131.05 166.25 141.05 187.35 155.1 187.2 156.1 187.25 157.1 187.1 167.7 186.25 176.5 172.95 178.4 169.9 179.55 165.35 Z`,
-    sad: `M -1047.95 688.05
-    Q -1046.55 690.1 -1043.9 692.3 -1043.2 692.9 -1039.15 696 -1036.65 697.95 -1034.15 697.85 -1031.55 697.75 -1029.35 695.4 -1027.4 693.3 -1027.55 690.8 -1027.7 688.55 -1029.45 686.3 -1036.75 676.8 -1044.85 671.5 -1053.75 665.65 -1063.05 665.15 -1077.2 665.1 -1087.9 671.45 -1096.85 676.75 -1104.8 687.55 -1105.75 688.8 -1105.85 691.2 -1105.95 693.65 -1105.1 694.55 -1103.85 695.8 -1101.55 696.5 -1099.4 697.15 -1097.3 697.05 -1096 697 -1094.3 695.85 -1093.4 695.25 -1091.5 693.55 -1089.9 692.2 -1085.3 687.1 -1078.1 679.35 -1065.5 679.85 -1053.15 680.3 -1047.95 688.05 Z`,
-    wow: `M 190.15 197.95
-    Q 192.95 190.05 190.05 181.3 184.7 164.85 176 142.9 169.9 127.45 149.45 119.95 132.4 113.55 120 121.7 107.7 129.9 107.5 147.65 107.4 163.45 115.05 179.5 122.9 195.6 135.95 206.5 142.25 211.6 148.95 214.3 167.05 221.65 180.05 211.2 187.5 205.25 190.15 197.95 Z`,
-    dull: `M -1034.6 -356.8
-    Q -1031.55 -356.8 -1030.95 -356.85 -1028.9 -357 -1027.8 -357.75 -1026.1 -358.95 -1024.8 -360.75 -1023.4 -362.65 -1023.05 -364.45 -1022.6 -366.8 -1024.1 -368.5 -1025.55 -370.15 -1028.2 -370.6 -1031 -371.1 -1034.15 -371.1
-    L -1088 -371.1
-    Q -1088.8 -371.1 -1090.65 -371.15 -1092.2 -371.15 -1092.9 -370.65 -1095.85 -368.4 -1096.7 -367.65 -1098.75 -365.75 -1099.2 -364.05 -1099.9 -361.5 -1098 -359.6 -1096.35 -358 -1093.4 -357.25 -1091.5 -356.75 -1087.45 -356.75 -1043.4 -356.75 -1034.6 -356.8 Z`,
-    happy: `M62,20.1c-2.2,8.6-3.5,17.6-6.8,25.7a18.1,18.1,0,0,1-25.8,9c-6.8-3.7-12.6-8.3-16.6-15.2-3.1-5.4-7.5-10.2-10.4-15.7-5-9.4-2-13.9,8.8-14.8,5.6-.5,11.3-.8,16.7-2a99.78,99.78,0,0,0,17.8-5.7C52.75-1.7,57.85.3,59.55,8A118.57,118.57,0,0,1,61,19.8Z`,
-    dead: `M -1603.85 169.6
-    Q -1607.05 168.8 -1611.7 171.75 -1614.9 173.65 -1617.25 175.95 -1620.7 179.3 -1627.7 185.95 -1633.7 191.8 -1637.85 196.25 -1641.9 200.65 -1647.6 210.05 -1649.25 212.8 -1648.55 215.3 -1647.85 217.85 -1645 219.4 -1640.2 222 -1636.45 216.8 -1629.75 207.45 -1626.85 204 -1621.5 197.55 -1618.6 194.75 -1613.55 189.9 -1607.95 187.1 -1606.25 189.35 -1605.5 190.4 -1604.1 192.25 -1603.35 193.55 -1602.6 194.9 -1598.9 201.95 -1596.2 207.1 -1594.15 210.1 -1590.1 215.95 -1585.9 215.9 -1581.8 215.8 -1577.75 209.95 -1577.25 209.2 -1576.2 207.35 -1575.3 205.65 -1574.65 204.8 -1569.5 198.3 -1567.7 196.4 -1563.5 192 -1558.95 189.9 -1554.95 191.5 -1552 195.75 -1549 200.9 -1547.4 203.35 -1543.2 209.6 -1539.35 210.2 -1535.6 210.75 -1529.4 206.35 -1525.6 203.65 -1519.75 200.3 -1513.1 196.6 -1509.8 194.65 -1506.45 192.7 -1503.8 193.1 -1500.95 193.55 -1498.5 196.7 -1496.9 198.8 -1494.45 201.1 -1493.15 202.35 -1489.95 205.05 -1488.05 206.75 -1485.9 206.75 -1483.8 206.75 -1481.8 205.1 -1479.75 203.4 -1479.65 201.2 -1479.55 199.1 -1481.2 197.15 -1489.65 187.05 -1495.9 180.95 -1499.1 177.85 -1502.85 177.65 -1506.5 177.45 -1510.45 180 -1517.25 184.45 -1522.5 187.1 -1529.35 190.55 -1531.7 191.45 -1535.25 192.75 -1537.35 192.05 -1539.45 191.35 -1541.6 188.15 -1543.1 186 -1546.85 179.05 -1550.1 173.1 -1553.85 172.15 -1557.7 171.2 -1562.85 175.3 -1566.45 178.1 -1571.5 182.75 -1579.55 190.15 -1579.95 190.5 -1580.7 191.15 -1586.4 195.75 -1586.4 195.7 -1588.8 192.4 -1590.05 190.7 -1590.65 189.55 -1591.6 187.75 -1594.2 182.35 -1596.35 177.85 -1597.85 175.25 -1600.6 170.4 -1603.85 169.6 Z`,
-    talks: [
-`M 182.2 146.6
-Q 175.9 146.636328125 168.6 146.55 161.35 146.4994140625 155.55 146.1 149.8 145.7607421875 141.3 145.1 132.8 144.4380859375 128.95 145.25 125.15 146.05390625 122.7 150 118.65 156.7 123.15 163.2 138.2 184.8 159.35 184.65 160.9 184.7 162.4 184.6 178.3 183.7 191.55 170.05 194.45 167 196.15 162.3 200.2 150.7453125 194.35 148.65 188.55 146.5634765625 182.2 146.6 Z`,
-`M 179.55 165.35
-Q 182.2 154.05 178.4 151.75 174.55 149.35 170.55 147.2 166.55 145 161.5 143.1 156.5 141.1 152.3 142.05 148.1 143.1 142.8 145.55 137.45 147.9 134.95 148.7 132.35 149.5 130.75 153.3 128.05 159.95 131.05 166.25 141.05 187.35 155.1 187.2 156.1 187.25 157.1 187.1 167.7 186.25 176.5 172.95 178.4 169.9 179.55 165.35 Z`,
-`M 182.2 146.6
-Q 175.9 146.636328125 168.6 146.55 161.35 146.4994140625 155.55 146.1 149.8 145.7607421875 141.3 145.1 132.8 144.4380859375 128.95 145.25 125.15 146.05390625 122.7 150 118.65 156.7 123.15 163.2 138.2 184.8 159.35 184.65 160.9 184.7 162.4 184.6 178.3 183.7 191.55 170.05 194.45 167 196.15 162.3 200.2 150.7453125 194.35 148.65 188.55 146.5634765625 182.2 146.6 Z`,
-`M175,172.74    Q 217.45 138.45 214.45 141.6 192.05 165.5 165.4 166.7 160.95 166.9 156.35 166.45 130.15 163.9 108.2 142.65 103.4 138 97.7 138.9 92.35 139.7 87.6 145 79.6 153.95 88.45 162.6 117.95 191.5 159.45 191.3 162.45 191.35 165.4 191.25 196.55 190 222.6 171.75 228.3 167.7 231.55 161.45 239.5 146 224.1 140.75Z`]
-}
+<path id="right" transform="translate(349) scale(-1 1)" class="cls-2"
+d="M65.81,1.76c28.9.3,58.2,20.4,65,51.7,6.1,28.2-7.9,56.9-35.4,70.3-32.4,15.8-69.7,3.2-85.8-22.4-3.5-5.5-6.7-11.8-7.9-18.1-6.4-33.1,4.9-62.9,39.1-75.8C48.71,4.56,57.41,3.56,65.81,1.76Z" />
+<path id="left" class="cls-2"
+d="M65.81,1.76c28.9.3,58.2,20.4,65,51.7,6.1,28.2-7.9,56.9-35.4,70.3-32.4,15.8-69.7,3.2-85.8-22.4-3.5-5.5-6.7-11.8-7.9-18.1-6.4-33.1,4.9-62.9,39.1-75.8C48.71,4.56,57.41,3.56,65.81,1.76Z" />
+<path id="mouth" class="cls-2"
+d="M182.34,174.48c-15.2.2-24.8-4.4-34.3-9.2a10.48,10.48,0,0,1-4.4-3.9c-1-2.1-2-5.8-1-7a9.57,9.57,0,0,1,7.5-2.8c2.7.3,5.3,2.5,7.9,4.1q19.65,12.3,39.4,0a54.1,54.1,0,0,1,7.9-4.2c3.1-1.2,6.4-.3,7.5,2.9.7,2-.2,5-1.2,7.1-.8,1.7-2.7,3-4.4,3.9C198.14,170.08,188.64,174,182.34,174.48Z" /></svg>`;
 
 
-export const MouthSeq = [...Mouths.talks, Mouths.wow, Mouths.dull, Mouths.dead, Mouths.happy, Mouths.sad, ];
-const Cached = {};
+export const Emotions = ['default', 'happy', 'grin', 'serious', 'sad', 'error'];
+let Cached = {};
 export const Facial = (w = 512, h = 512) => {
+
     const svgW = document.createElement('div');
     svgW.id = 'face';
-    const viewBox = `0 0 ${w} ${h}`
+
     svgW.innerHTML = FaceBase;
     //svgW.style.display = 'none';
     svgW.style.background = `#000`;
     svgW.style.margin = 0;
     svgW.style.padding = 0;
-    svgW.style.width = 'auto';
-    svgW.style.height = 'auto';
+    svgW.style.width = `${w}px`;
+    svgW.style.height = `${h}px`;
 
-    const svg = svgW;
-    const LeftEye = { state: 'default', path: svg.querySelector('#left') }
-    const RightEye = { state: 'default', path: svg.querySelector('#right') }
-
-    const Mouth = { state: 'default', path: svg.querySelector('#mouth') }
-
+    const svg = svgW.firstChild;
+    const LeftEye = { state: 'default', path: svgW.querySelector('#left') }
+    const RightEye = { state: 'default', path: svgW.querySelector('#right') }
+    const Mouth = { state: 'default', path: svgW.querySelector('#mouth') }
+    const ref = document.createElement('svg')
+    ref.innerHTML = TomiFaceSVG;
+    const lips = ref.querySelectorAll('.cls-2');
+    lips.forEach(lip => {
+        if (lip.id == '')
+            lip.classList.add('cls-1');
+    });
+    const getLipPath = (id) => {
+        return lips[id].getAttribute('d');
+    }
+    const eyes = ref.querySelectorAll('.cls-3');
+    eyes.forEach(eye => {
+        if (eye.id == '')
+            eye.classList.add('cls-1');
+    })
+    const getEyesPath = (id) => {
+        return eyes[id].getAttribute('d');
+    }
+    console.log(lips, eyes);
 
     const canv = document.createElement('canvas');
     canv.width = 512;
@@ -89,33 +71,27 @@ export const Facial = (w = 512, h = 512) => {
     const svgChild = svg.querySelector('svg');
     const ctx = canv.getContext('2d');
     let rendering = false;
-    let _lastTime = 0;
     const shield = document.createElement('img');
     shield.setAttribute('src', '/models/tomi/shield.jpg');
     const updateTexture = (ms = 0) => {
-        if (!rendering) {
+        if (!rendering && Face.needsUpdate || Face.talking) {
             rendering = true;
             ctx.clearRect(0, 0, 512, 512);
             ctx.drawImage(shield, 0, 100, 512, 470);
-            const animId = `${Face.state}_${Face.talking}_${Face._lipId}`;
-            if (Face.talking) {
-               // Face._dur = (Face._lipId === 3) ? 1.5 : 0;
-               //console.log(ms - Face._lastTime);
-                if (ms -Face._lastTime >= 0.15 + Face._dur) {
-                    Face.mouth.path.setAttribute('d', MouthSeq[Face._lipId]) 
+            const animId = `${Face._eyeLeft}_${Face._eyeRight}_${Face.talking}_${Face._lipId}`;
+            if (Face.talking && !Face.useAudio) {
+                if (ms - Face._lastTime >= 0.15 + Face._dur) {
+                    Face.mouth.path.setAttribute('d', getLipPath(Face._lipId))
                     Face._lipId++;
                     Face._lipId = Face._lipId % Face._maxLip;
-                    if (Face._lipId == 0)Face._lipId = Face._minLip;
-
+                    if (Face._lipId == 0) Face._lipId = Face._minLip;
                     Face._lastTime = ms;
-                } 
+                }
             } else {
-                Face.mouth.path.setAttribute('d', MouthSeq[Face._lipId]) 
+                Face.mouth.path.setAttribute('d', getLipPath(Face._lipId))
             }
 
-            
-
-            const svgData = (new XMLSerializer()).serializeToString(svg.firstChild)
+            const svgData = (new XMLSerializer()).serializeToString(svg)
             const img = (Cached[animId]) ? Cached[animId] : document.createElement('img');
             const scale = 2.0;
             const render = (img) => {
@@ -137,46 +113,96 @@ export const Facial = (w = 512, h = 512) => {
                     rendering = false;
                 }
             }
-           
+            Face.needsUpdate = false;
         }
     }
-    svg.appendChild(canv)
+    svgW.appendChild(canv)
 
     const Face = {
         rendering: false,
-        left: LeftEye, right: RightEye, mouthState:'default',mouth: Mouth, texture: texture, state: `happy`, talking: true,
+        left: LeftEye, right: RightEye, mouthState: 'default', mouth: Mouth, texture: texture, state: `happy`, talking: false,
         _lastTime: 0,
         _currTime: 0,
         _dur: 0,
-        _lipId: 0,
+        _eyeLeft: 5,
+        _eyeRight: 5,
+        _lipId: 1,
         _minLip: 0,
-        _maxLip: 3,
+        _maxLip: 4,
+        needsUpdate: true,
+        useAudio: true,
+        lips: lips,
+        eyes: eyes,
+        autoAnimate: true,
+        reset: () => {
+            Cached = {};
+            Face.setEyes(5);
+            Face.setLip(0);
+
+        },
+        action(eyeLeft, eyeRight = -1, lip = -1, duration = 800) {
+            const prevLeft = Face._eyeLeft;
+            const prevRight = Face._eyeRight;
+            const prevLip = Face._lipId;
+            const talking = Face.talking;
+            Face.setEyes(eyeLeft, eyeRight);
+            if (lip > -1) {
+                Face.talking = false;
+                Face.setLip(lip);
+            }
+            if (duration > 0) {
+                setTimeout(_ => {
+                    Face.setEyes(prevLeft, prevRight);
+                    if (lip > -1) {
+                        Face.setLip(prevLip);
+                        Face.talking = talking;
+                    }
+                }, duration);
+            }
+
+        },
+        setLip: (index) => {
+            Face._lipId = index;
+            const l = Face.lips[index].getAttribute('d');
+            Face.mouth.path.setAttribute('d', l);
+            Face.needsUpdate = true;
+        },
+        setEyes: (index, index2 = -1) => {
+            index2 = (index2 > -1) ? index2 : index;
+            Face._eyeLeft = index;
+            Face._eyeRight = index2;
+            const l = Face.eyes[index].getAttribute('d');
+            const r = Face.eyes[index2].getAttribute('d');
+            Face.left.path.setAttribute('d', l);
+            Face.right.path.setAttribute('d', r);
+            Face.needsUpdate = true;
+        },
         update: updateTexture,
         setState: (s, duration = 0) => {
             let e;
             if (duration) {
                 e = Face.state;
             }
-           // Face._dur = duration;
+            // Face._dur = duration;
             Face.state = s;
             UpdatePath('left', s, false);
             if (s == 'wink') s = 'default';
             UpdatePath('right', s, true);
 
             if (e) {
-                setTimeout(()=>{
-                    Face.setState (e);
+                setTimeout(() => {
+                    Face.setState(e);
                 }, duration);
             }
         },
-        states: Object.keys(Eyes),
+        states: [],
     }
-    
+
     const UpdatePath = (from, to, autoUpdate = true) => {
-        const Ref = (from === 'mouth') ? Mouths : Eyes;
-        Face[from].path.setAttribute('d', Ref[to])
-        
-        if (autoUpdate) updateTexture();
+        // const Ref = (from === 'mouth') ? Mouths : Eyes;
+        // Face[from].path.setAttribute('d', Ref[to])
+
+        // if (autoUpdate) updateTexture();
     }
     return {
         svg,
@@ -193,6 +219,4 @@ export function clean(path) {
 
 export default {
     Facial,
-    Mouths,
-    Eyes
 }
