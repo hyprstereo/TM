@@ -5,7 +5,7 @@ import {
   Object3D,
   Raycaster,
   Vector2,
-} from "../build/three.module.js";
+} from "/build/three.module.js";
 import Emitter from "../events/emitter.js";
 import { InteractiveObject, PointerStates } from "./interactiveobject.js";
 

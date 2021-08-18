@@ -6,7 +6,7 @@ import {
 	TOUCH,
 	Vector2,
 	Vector3
-} from '../../build/three.module.js';
+} from '/build/three.module.js';
 
 // This set of controls performs orbiting, dollying (zooming), and panning.
 // Unlike TrackballControls, it maintains the "up" direction object.up (+Y by default).
@@ -58,7 +58,7 @@ class OrbitControls extends EventDispatcher {
 
 		// Set to true to enable damping (inertia)
 		// If damping is enabled, you must call controls.update() in your animation loop
-		this.enableDamping = false;
+		this.enableDamping = true;
 		this.dampingFactor = 0.05;
 
 		// This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
@@ -68,7 +68,7 @@ class OrbitControls extends EventDispatcher {
 
 		// Set to false to disable rotating
 		this.enableRotate = true;
-		this.rotateSpeed = 1.0;
+		this.rotateSpeed = .5;
 
 		// Set to false to disable panning
 		this.enablePan = true;

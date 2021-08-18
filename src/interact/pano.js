@@ -1,15 +1,16 @@
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
-import { OrbitControls } from "../jsm/controls/OrbitControls.js";
+import { OrbitControls } from "/js/jsm/controls/OrbitControls.js";
 import { SceneManager } from "../controllers/view.js";
 
 export const isVideo = (src) => {
   return src.endsWith(".webm") || src.endsWith(".mp4") || src.endsWith(".mov");
 };
 
-export const createVideoElement = async (...videoSrc) => {
+export const createVideoElement = async (config = { preload: true, autoplay: true }, ...videoSrc) => {
   return await new Promise((resolve, rej) => {
     const video = document.createElement("video");
+    video.preload = config.preload || false;
     video.playsInline = video.muted = true;
 
     videoSrc.forEach((src) => {
@@ -20,9 +21,7 @@ export const createVideoElement = async (...videoSrc) => {
     video.style.display = "none";
     //video.crossOrigin = "anonymous";
 
-    video.autoplay = true;
-    // video.onload = () => resolve(video);
-    // video.onerror = (e) => rej(null);
+    video.autoplay = config.autoplay || true;
     resolve(video);
   });
 };
@@ -85,23 +84,27 @@ export class panoControl extends THREE.EventDispatcher {
     this.camera = camera;
     this.isInteracting = false;
     this.orbitMode = orbit;
-   
+
     this.c = new OrbitControls(camera, renderer.domElement);
     this.setOrbit(orbit);
     this._maxDistance = this.c.maxDistance;
     this.c.screenSpacePanning = false;
     this.c.enablePan = true;
     this._lockTarget = null;
+    this._tweening = false;
+    this._camLook = new THREE.Vector3();
     return this;
   }
 
   setOrbit(state = true) {
     this.orbitMode = state;
     if (state) {
-     this.c.target = this.target;
+      this.c.target = this.target;
     } else {
-      
-     //this.camera.position.copy(this.target);
+      const cpos = this.target;
+      cpos.z -= 0.1;
+      this.camera.position = cpos;
+      //this.camera.position.copy(this.target);
     }
     //this.c.enablePan = !state;
   }
@@ -115,9 +118,10 @@ export class panoControl extends THREE.EventDispatcher {
     return this._target;
   }
 
+  
   update() {
-    
-      this.c.update()
+
+    this.c.update()
   }
 
   destroy() {
@@ -146,8 +150,35 @@ export class panoControl extends THREE.EventDispatcher {
     this.dispatchEvent({ type: "unlock" });
   }
 
-  lookAt(target) {
-    this.target = target;
+  lookAt(target, tween = false, gaze = true) {
+    // this.target = target;
+    const self = this;
+    let opos = new THREE.Vector3().copy(this.c.target);
+   
+    if (tween) {
+      if (!this._tweening) {
+        this._tweening = true;
+        // gsap.to(this.c.target, {
+        //   ...target, duration: 1.2, ease: 'sine.out', delay: 0.5, onComplete: () => {
+        //     self._tweening = false;
+        //     if (gaze) {
+        //       this.c.target = this.target;
+        //     }
+        //   }
+        // })
+        gsap.to(this._camLook, {
+          x: target.x, y: target.y, z: target.z, duration: 2, ease: 'sine.out', delay: 0.5, onComplete: () => {
+            self._tweening = false;
+          },
+          onUpdate:()=>{
+            self.camera.lookAt(self._camLook);
+          }
+        })
+      }
+    } else {
+      this.target = target;
+    }
+    this._target = target;
   }
 
   onRender(ms = 0) {
@@ -158,9 +189,9 @@ export class panoControl extends THREE.EventDispatcher {
     this.c.update();
   }
 
-  moveTo(target, delay=0, complete = undefined) {
+  moveTo(target, delay = 0, complete = undefined) {
     let pos = target.clone();
-    createjs.Tween.get(this.camera.position, {onComplete: complete}).wait(delay).to(pos, 1200);
+    createjs.Tween.get(this.camera.position, { onComplete: complete }).wait(delay).to(pos, 1200);
   }
 }
 

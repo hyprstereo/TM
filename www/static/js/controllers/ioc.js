@@ -1,4 +1,4 @@
-import * as THREE from "../build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
+import * as THREE from "/build/three.module.js"; //"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
 import { Pointer3D } from "../interact/pointer.js";
 import { setupScene, setupControls, SETTINGS } from "../scene/config.js";
 import { LoadAssets } from "../scene/props.js";

@@ -1,15 +1,15 @@
-import { TextureLoader, ImageLoader, Sprite, SpriteMaterial, Object3D, MeshBasicMaterial, BoxGeometry, Mesh, PlaneGeometry, DoubleSide } from "../build/three.module";
 import { degToRad } from "../utils/helpers";
-const spriteLoader = new TextureLoader();
+const spriteLoader = new THREE.TextureLoader();
 export const SpriteLayer = 5;
-export class SpriteButton extends Mesh {
+export class SpriteButton extends THREE.Mesh {
     constructor(material = undefined) {
-        const c = new PlaneGeometry(1, 1, 1);
-        if (!material) material = new MeshBasicMaterial({transparent:true, side: DoubleSide});
+        const c = new THREE.PlaneGeometry(1, 1, 1);
+        if (!material) material = new THREE.MeshBasicMaterial({transparent:true, side: THREE.DoubleSide});
         c.rotateY(degToRad(180));
         super(c, material);
         this.selected = false;
-       
+        this.maxScale = 1;
+        this.heightRatio = 1;
 
        //
        this.layers.set(SpriteLayer);
@@ -19,28 +19,39 @@ export class SpriteButton extends Mesh {
         return this;
     }
 
+    set interactive(state) {
+        this.layers.set(state? SpriteLayer : 8);
+    }
+
+    get interactive() {
+        return (this.layers.get() === SpriteLayer);
+    }
+
     async load(src) {
         return await new Promise((res, rej) =>{
             spriteLoader.load(src, (img) => {
+                this.heightRatio = img.image.height/img.image.width;
                 this.material.map = img;
                 res(this); 
             },null, (e) => rej(e));
         });
     }
 
-    onPointerDown(delay = 1200, scale = .6,cursor = undefined, cb = undefined) {
+    onPointerDown(delay = 1200, scale = -1,cursor = undefined, cb = undefined) {
+        if (scale == -1) scale = this.maxScale;
         this.selected = true;
-        this.scale.set(0.5, 0.5, 0.5);
+        this.scale.multiplyScalar(-0.1);
         createjs.Tween.get(this.scale, {onComplete:()=>{
             if (cb) cb(this.userData);
             this.selected = false;
             this.hide();
-        }} ).wait(delay).to({x:scale, y: scale, z: scale}, 600, createjs.Ease.bounceOut);
+        }} ).wait(delay).to({x:scale, y: scale * this.heightRatio, z: scale}, 600, createjs.Ease.bounceOut);
     }
 
-    show(delay = 0, scale = 1) {
+    show(delay = 0, scale = -1) {
+        scale = this.maxScale;
         this._hidden = false;
-        createjs.Tween.get(this.scale ).wait(delay).to({x:scale, y: scale, z: scale}, 600, createjs.Ease.bounceOut);
+        createjs.Tween.get(this.scale ).wait(delay).to({x:scale, y: scale * this.heightRatio, z: scale}, 600, createjs.Ease.bounceOut);
     }
 
     hide(delay=0) {

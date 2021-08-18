@@ -1,4 +1,4 @@
-import { Box3, Box3Helper, Object3D } from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 
 
 export const PointerStates = {
@@ -7,14 +7,14 @@ export const PointerStates = {
   Hit: 2
 }
 
-export class InteractiveObject extends Object3D {
+export class InteractiveObject extends THREE.Object3D {
   constructor(target, id = undefined) {
     super()
     this._id = id || target.name;
     this._pointerState = PointerStates.Default;
     this.add(target);
-    this._box = new Box3().setFromObject(target);
-    this._boxH = new Box3Helper(this._box, 0xff00ff);
+    this._box = new THREE.Box3().setFromObject(target);
+    this._boxH = new THREE.Box3Helper(this._box, 0xff00ff);
     this._boxH.layers.set(6);
     this.add(this._boxH);
     target.userData = {

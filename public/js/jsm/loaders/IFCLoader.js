@@ -12,7 +12,7 @@ import {
 	Matrix4,
 	BufferGeometry,
 	BufferAttribute,
-} from '../../build/three.module.js';
+} from '/build/three.module.js';
 import {BufferGeometryUtils} from "../utils/BufferGeometryUtils.js"
 
 const ifcAPI = new WebIFC.IfcAPI();

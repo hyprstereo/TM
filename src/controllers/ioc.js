@@ -1,9 +1,9 @@
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { Pointer3D } from "../interact/pointer.js";
 import { SpriteLayer } from "../objects/sprites.js";
 import { setupScene, setupControls, SETTINGS } from "../scene/config.js";
 import { LoadAssets } from "../scene/props.js";
-import { TOMIController } from "./tomi.controller.js";
+import { TOMIController } from "./tomi/tomi.controller.js";
 
 // global variables
 let mainCamera;
@@ -27,10 +27,11 @@ let pointer;
 // }
 
 export const createLoadScreen = () => {
-  loadScreen = document.querySelector("#overlay");
-  const prog = loadScreen.querySelector(".prog");
+  loadScreen = document.querySelector("#loading-screen");
+  loadScreen.style.pointerEvents = 'none';
   const updateScreen = (msg) => {
-    prog.innerHTML = `<span>${msg}</span>`;
+    //prog.innerHTML = `<span>${msg}</span>`;
+    console.log(msg);
   };
   return { screen: loadScreen, fn: updateScreen };
 };
@@ -56,7 +57,7 @@ export const sceneResize = (cam, renderer = undefined) => {
       pe_fxaa.material.uniforms["resolution"].value.y = 1 / (h * pixelRatio);
     }
     render(0);
-  });
+  }, false);
 };
 
 // a simple asset loader
@@ -169,7 +170,7 @@ export const init = async () => {
     pe_fxaa = fxaa;
     clock = build.clock;
 
-    sceneResize(mainCamera, mainRenderer);
+   // sceneResize(mainCamera, mainRenderer);
     mainCamera.layers.enableAll();
     loadAsset(mainScene, (progress, total) => {
       fn("loading: " + progress.toString() + "/" + total.toString());

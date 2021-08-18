@@ -1,7 +1,4 @@
-import {
-  Raycaster,
-  Vector2,
-} from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { SceneManager } from "../controllers/view.js";
 import Emitter from "../events/emitter.js";
 import { SpriteButton, SpriteLayer } from "../objects/sprites.js";
@@ -13,8 +10,8 @@ export class Pointer3D extends Emitter {
   constructor(camera, scene, context, target = undefined, layerId = 6, outline = undefined, hover = true) {
     super();
     this.selectedObjects = [];
-    this.cursor = new Vector2();
-    this.raycaster = new Raycaster();
+    this.cursor = new THREE.Vector2();
+    this.raycaster = new THREE.Raycaster();
     this._target = target || scene;
     this.raycaster.layers.disableAll();
     this.raycaster.layers.enable(SpriteLayer);
@@ -138,7 +135,7 @@ export const UnbindPointerEvents = (scope, listener, ...types) => {
 
 export class PickHelper {
   constructor() {
-    this.raycaster = new Raycaster();
+    this.raycaster = new THREE.Raycaster();
     this.pickedObject = null;
     this.pickedObjectSavedColor = 0;
   }

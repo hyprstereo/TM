@@ -1,4 +1,4 @@
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { SETTINGS, setupControls, setupScene } from "../scene/config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "../scene/config.js";

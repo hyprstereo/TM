@@ -1,12 +1,11 @@
-import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
-import * as THREE from "../build/three.module.js";
+import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
+import * as THREE from "/build/three.module.js";
 import { degToRad } from "../utils/helpers.js";
 import { reflects, SETTINGS } from "../scene/config.js";
-import { GLTFExporter } from "../jsm/exporters/GLTFExporter.js";
+import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
-import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
+import { CSS3DRenderer, CSS3DObject } from "/js/jsm/renderers/CSS3DRenderer.js";
 import { SceneManager } from "../controllers/view.js";
-import { SpriteLayer } from "../objects/sprites.js";
 
 
 export const Assets = [
@@ -240,6 +239,7 @@ export const setupScreens = (tablesSet, scene = undefined) => {
       const child = node;
 
       if (node.type === "Mesh") {
+        node.layers.set(6);
         if (node.name.startsWith('Scene0')) {
           node.userData =  node.userData = { ...data, id: node.name, child: node.children };
         }

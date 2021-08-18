@@ -1,4 +1,4 @@
-import { ImageBitmapLoader } from "../build/three.module.js";
+import { ImageBitmapLoader } from "/build/three.module.js";
 
 const SpriteAssets = [
     '/ui/cybersecurity/btn_cyber.png',

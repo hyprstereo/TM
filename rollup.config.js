@@ -2,10 +2,14 @@ import svg from 'rollup-plugin-svg'
 
 export default {
   input: "./src/app.js",
-  external:["node_modules/**", "build/**", "THREE", "lodash"],
+  external:['/node_modules/**', '/build/**', 'THREE'],
   output: [
     {
-      file: "./public/app/tm.one.js",
+      file: "./public/iocmain.js",
+      paths: {
+        '/js': './js',
+        '/build': './build'
+      }
     },
   ],
   plugins: [

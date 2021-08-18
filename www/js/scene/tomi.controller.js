@@ -1,5 +1,5 @@
 import { degToRad } from "../utils/helpers.js";
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import {
   IK,
   IKHelper,

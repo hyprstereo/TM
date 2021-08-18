@@ -1,4 +1,4 @@
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import {  setupControls, setupScene } from "./config.js";
 import Emitter from "../events/emitter.js";
 import { postEffects } from "./config.js";
@@ -59,14 +59,13 @@ class SceneManagerImpl extends Emitter {
       "#app",
       this.renderer
     );
-      window.addEventListener('resize', (e) =>{
-        
-      })
+     
     return build;
   }
 
   _onResize(e) {
-    const parent = this.renderer.domElement
+    const parent = this.renderer.domElement.parentNode;
+    console.log(parent);
     const w = parent.offsetWidth || parent.clientWidth;
     
     const h = parent.offsetHeight || parent.clientHeight;
@@ -121,17 +120,18 @@ class SceneManagerImpl extends Emitter {
   }
 
   play() {
+    //window.addEventListener('resize', this._onResize.bind(this), false);
     this.clock.start();
     this.renderer.shadowMap.needsUpdate = true;
     createjs.Ticker.timingMode = createjs.Ticker.RAF;
     createjs.Ticker.addEventListener("tick", this._onRender.bind(this));
-    window.addEventListener('resize', this._onResize.bind(this));
+   
   }
 
   stop() {
+    //window.removeEventListener('resize', this._onResize.bind(this));
     this.clock.stop();
     createjs.Ticker.removeEventListener("tick", this._onRender.bind(this));
-    window.removeEventListener('resize', this._onResize.bind(this));
   }
 
   _onRender(ms) {

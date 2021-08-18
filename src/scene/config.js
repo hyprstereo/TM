@@ -1,23 +1,22 @@
 import { isMobile } from "../utils/helpers.js";
-import * as THREE from "../build/three.module.js";
-import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
+import * as THREE from "/build/three.module.js";
+import { GLTFLoader } from "/js/jsm/loaders/GLTFLoader.js";
 import Stats from "../build/stats.module.js";
-import { RenderPass } from "../jsm/postprocessing/RenderPass.js";
-import { FXAAShader } from "../jsm/shaders/FXAAShader.js";
-import { ShaderPass } from "../jsm/postprocessing/ShaderPass.js";
-import { CopyShader } from "../jsm/shaders/CopyShader.js";
-import { BloomPass } from "../jsm/postprocessing/BloomPass.js";
-import { OutlinePass } from "../jsm/postprocessing/OutlinePass.js";
-import { SSRPass } from "../jsm/postprocessing/SSRPass.js";
-import { ReflectorForSSRPass } from "../jsm/objects/ReflectorForSSRPass.js";
+import { RenderPass } from "/js/jsm/postprocessing/RenderPass.js";
+import { FXAAShader } from "/js/jsm/shaders/FXAAShader.js";
+import { ShaderPass } from "/js/jsm/postprocessing/ShaderPass.js";
+import { CopyShader } from "/js/jsm/shaders/CopyShader.js";
+import { BloomPass } from "/js/jsm/postprocessing/BloomPass.js";
+import { OutlinePass } from "/js/jsm/postprocessing/OutlinePass.js";
+import { SSRPass } from "/js/jsm/postprocessing/SSRPass.js";
+import { ReflectorForSSRPass } from "/js/jsm/objects/ReflectorForSSRPass.js";
 
-import { EffectComposer } from "../jsm/postprocessing/EffectComposer.js";
-import { SAOPass } from "../jsm/postprocessing/SAOPass.js";
+import { EffectComposer } from "/js/jsm/postprocessing/EffectComposer.js";
+import { SAOPass } from "/js/jsm/postprocessing/SAOPass.js";
 
 import { panoControl } from "../interact/pano.js";
 import Emitter from "../events/emitter.js";
 import { TTS } from "../utils/tts.js";
-import { Vector2 } from "../build/three.module.js";
 
 export let reflects = [];
 
@@ -356,7 +355,7 @@ export const postEffects = (
   const pixelRatio = renderer.getPixelRatio();
 
   const container = renderer.domElement;
-  const dim = new Vector2(container.offsetWidth, container.offsetHeight);
+  const dim = new THREE.Vector2(container.offsetWidth, container.offsetHeight);
 
   const fxaa = fxaaPass;
   fxaaPass.material.uniforms["resolution"].value.x =

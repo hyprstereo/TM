@@ -1,5 +1,5 @@
 import { isMobile } from "../utils/helpers.js";
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
 import Stats from "../build/stats.module.js";
 import { RenderPass } from "../jsm/postprocessing/RenderPass.js";
@@ -17,7 +17,7 @@ import { SAOPass } from "../jsm/postprocessing/SAOPass.js";
 import { panoControl } from "../interact/pano.js";
 import Emitter from "../events/emitter.js";
 import { TTS } from "../utils/tts.js";
-import { Vector2 } from "../build/three.module.js";
+import { Vector2 } from "/build/three.module.js";
 
 export let reflects = [];
 

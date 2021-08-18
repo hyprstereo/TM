@@ -1,5 +1,5 @@
 
-import * as THREE from "../build/three.module.js";
+import * as THREE from "/build/three.module.js";
 import { GLTFLoader } from "../jsm/loaders/GLTFLoader.js";
 
 const bonesRef = [

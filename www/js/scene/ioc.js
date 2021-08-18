@@ -6,7 +6,7 @@ import { GLTFExporter } from "/js/jsm/exporters/GLTFExporter.js";
 import { SaveString } from "../utils/helpers.js";
 import { CSS3DRenderer, CSS3DObject } from "../jsm/renderers/CSS3DRenderer.js";
 import { InteractiveObject } from "../interact/interactiveobject.js";
-import { Box3Helper } from "../build/three.module.js";
+import { Box3Helper } from "/build/three.module.js";
 
 export const Assets = [
   "/models/ioc/building2.glb",
