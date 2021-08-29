@@ -1437,7 +1437,8 @@
 
 		 this.name = '';
 
-		 this.image = image;
+		 this.ima
+		 ge = image;
 		 this.mipmaps = [];
 
 		 this.mapping = mapping;

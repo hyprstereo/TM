@@ -55,7 +55,6 @@ export const createAudioPlayer = (sources, config = { autoplay: true, analyser: 
             onstop: config.onstop || null,
             autoplay: config.autoplay || trues
         });
-    
     }
     
 
