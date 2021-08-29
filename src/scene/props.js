@@ -280,7 +280,7 @@ export const setupScreens = (tablesSet, scene = undefined) => {
         //node.map.needsUpdate = true;
       }
       //node.map.needsUpdate = true;
-
+      node.updateMatrixWorld()
       counter++;
     });
     //tablesSet.matrixAutoUpdate = false;

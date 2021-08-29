@@ -299,10 +299,11 @@ export class IOCScene extends Emitter {
             //this._videoEl = this.screenManager.image;
 
             if (index > -1) this._activeIndex = index;
-            if (index < 0) this._activeIndex++;
+           
             const mm = this._mediaManager;
             const item = this.currentItem();
             this._selected = item;
+            if (index < 0) this._activeIndex++;
             console.log(item);
 
             mm.play(item.data.src, item.data.audio);
@@ -466,6 +467,7 @@ export class IOCScene extends Emitter {
         btns[2].position.set(0, -.5, -2);
 
         btns[3].position.x -= .48;
+        
         btns[4].position.x = btns[3].position.x;
 
 
@@ -484,7 +486,7 @@ export class IOCScene extends Emitter {
         const react = btns[6];
 
         //btns[2].lookAt(SceneManager.camera.position.clone())
-        this._hud.position.z = -0.26;
+        this._hud.position.z = -0.02;
         this._hud.add(btns[3], btns[4]);
         this._hud.add(btns[0]);
         this._hud.add(btns[1]);
@@ -500,12 +502,13 @@ export class IOCScene extends Emitter {
         // end here
 
         proact.position.x = btns[0].position.x;
+        btns[2].saveState();
         this._group.add(btns[2]);
         // this._group.position.set(this._monitor.position.clone());
 
 
         this._buttons = btns;
-
+        this._buttons.forEach(b=>b.saveState());
         this.__updateUI()
         await this.createFX(scene, config);
 

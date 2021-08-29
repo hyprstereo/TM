@@ -271,6 +271,17 @@ export class EXRCamera extends OrbitControls {
     
   }
 
+  lookAt(target = undefined) {
+    if (target) {
+      const t = (target instanceof THREE.Object3D)? target.position.clone() : t;
+      gsap.to(this.target, {...t, duration: 1.2, ease: 'sine.out', onComplete: ()=> {
+        const dir = this.camera.getWorldDirection(t);
+        t = t.lerp(dir, 0.01)
+        this.target = t;
+      }})
+    }
+  }
+
   rotateTo(target, dur = 1) {
     if(target instanceof THREE.Object3D) target = target.position.clone();
     const v = new THREE.Vector3(0,0,0.01)

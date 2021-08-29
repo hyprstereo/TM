@@ -51711,6 +51711,17 @@ class EXRCamera extends OrbitControls {
     
   }
 
+  lookAt(target = undefined) {
+    if (target) {
+      const t = (target instanceof Object3D$1)? target.position.clone() : t;
+      gsap.to(this.target, {...t, duration: 1.2, ease: 'sine.out', onComplete: ()=> {
+        const dir = this.camera.getWorldDirection(t);
+        t = t.lerp(dir, 0.01);
+        this.target = t;
+      }});
+    }
+  }
+
   rotateTo(target, dur = 1) {
     if(target instanceof Object3D$1) target = target.position.clone();
     const v = new Vector3$1(0,0,0.01);
@@ -95419,7 +95430,7 @@ const setupScreens = (tablesSet, scene = undefined) => {
         node.castShadow = node.receiveShadow = true;
       } else if (node.type === 'Material') ;
       //node.map.needsUpdate = true;
-
+      node.updateMatrixWorld();
       counter++;
     });
     //tablesSet.matrixAutoUpdate = false;
@@ -100028,7 +100039,7 @@ class SpriteButton extends Mesh$1 {
         super(c, material);
         
         SpriteButton.__counter++;
-        //this.position.z =( -0.001 * SpriteButton.__counter);
+        this.position.z = (0.001 * SpriteButton.__counter);
         this.selected = false;
         this.maxScale = 1;
         this.heightRatio = 1;
@@ -100036,9 +100047,30 @@ class SpriteButton extends Mesh$1 {
         //
         this.layers.set(SpriteLayer);
         this.state = -1;
-       
+        this._oriPos = new Vector3$1();
+        this._pos2d = new Vector2$1(this.position.x, this.position.y);
+        this._t;
         this.hide();
+      
         return this;
+    }
+
+
+    set pos(v) {
+        this._pos2d = v;
+        this.position.x = v.x;
+        this.position.y = v.y;
+    }
+
+    get pos() {
+        return this._pos2d;
+    }
+
+    saveState() {
+        this._oriPos = this.position.clone();
+        this._pos2d.x = this.position.x;
+        this._pos2d.y = this.position.y;
+       // this.maxScale =  this.scale.x;
     }
 
     set interactive(state) {
@@ -100053,6 +100085,8 @@ class SpriteButton extends Mesh$1 {
         return await new Promise((res, rej) => {
             spriteLoader.load(src, (img) => {
                 this.heightRatio = img.image.height / img.image.width;
+                // this.scale.y = this.scale.x * this.heightRatio;
+                // this.scale.z = 
                 this.material.map = img;
                 res(this);
             }, null, (e) => rej(e));
@@ -100072,15 +100106,10 @@ class SpriteButton extends Mesh$1 {
                 self.hide();
             }
         });
-        // createjs.Tween.get(this.scale, {onComplete:()=>{
-        //     if (cb) cb(this.userData);
-        //     this.selected = false;
-        //     this.hide();
-        // }} ).wait(delay).to({x:scale, y: scale * this.heightRatio, z: scale}, 600, createjs.Ease.bounceOut);
     }
 
     show(delay = 0.2, scale = -1, complete = undefined) {
-        scale = this.maxScale;
+        scale = (scale<0)? this.maxScale : scale;
         const self = this;
         //createjs.Tween.get(this.scale).wait(delay).to({ x: scale, y: scale * this.heightRatio, z: scale }, 600, createjs.Ease.bounceOut);
         gsap.to(this.scale, {
@@ -100101,6 +100130,38 @@ class SpriteButton extends Mesh$1 {
                 if (complete)complete();
             }
         });
+    }
+
+    set opacity(v) {
+        this.material.opacity = v;
+    }
+
+    get opacity() {
+        return this.material.opacity;
+    }
+
+    slide(dir='right') {
+        const np = this.pos.clone();
+        let ox = 0, oy = 0;
+        switch(dir) {
+            case 'right':
+                ox = 0.1;
+                break
+            case 'left':
+                ox = -0.1;
+                break;
+            case 'up':
+                oy = 0.1;
+                break;
+            case 'down':
+                oy = -0.1;
+                break;
+        }
+        np.x += ox;
+        np.y += oy;
+        if (this._t && this._t.running) this._t.kill();
+        this._t = gsap.to(this.pos, {x: np.x, y: np.y, duration: 0.8});
+        return this;
     }
 }
 
@@ -104410,10 +104471,11 @@ class IOCScene extends Emitter {
             //this._videoEl = this.screenManager.image;
 
             if (index > -1) this._activeIndex = index;
-            if (index < 0) this._activeIndex++;
+           
             const mm = this._mediaManager;
             const item = this.currentItem();
             this._selected = item;
+            if (index < 0) this._activeIndex++;
             console.log(item);
 
             mm.play(item.data.src, item.data.audio);
@@ -104577,6 +104639,7 @@ class IOCScene extends Emitter {
         btns[2].position.set(0, -.5, -2);
 
         btns[3].position.x -= .48;
+        
         btns[4].position.x = btns[3].position.x;
 
 
@@ -104595,7 +104658,7 @@ class IOCScene extends Emitter {
         const react = btns[6];
 
         //btns[2].lookAt(SceneManager.camera.position.clone())
-        this._hud.position.z = -0.26;
+        this._hud.position.z = -0.02;
         this._hud.add(btns[3], btns[4]);
         this._hud.add(btns[0]);
         this._hud.add(btns[1]);
@@ -104611,12 +104674,13 @@ class IOCScene extends Emitter {
         // end here
 
         proact.position.x = btns[0].position.x;
+        btns[2].saveState();
         this._group.add(btns[2]);
         // this._group.position.set(this._monitor.position.clone());
 
 
         this._buttons = btns;
-
+        this._buttons.forEach(b=>b.saveState());
         this.__updateUI();
         await this.createFX(scene, config);
 
@@ -106405,24 +106469,26 @@ const init = async () => {
         if (!tomiConf.specials) ;
         if (tomiConf.visible) {
           SceneManager.tomi.appear();
+          if (tomiConf.position) {
+            const p = tomiConf.position;
+            const newp = new Vector3$1(
+              SceneConfig.tomiInitialPosition.x + p.x,
+              SceneConfig.tomiInitialPosition.y + p.y,
+              SceneConfig.tomiInitialPosition.z + p.z);
+            SceneManager.camera.position.clone();
+            SceneManager.controls.enableRotate = false;
+            //SceneManager.controls.lookAt(SceneManager.tomi);
+            SceneManager.tomi.moveTo(newp, true, SceneManager.camera, 'mid', (pos) => {
+              
+            }, () => {
+              //SceneManager.controls.lookAt();
+              SceneManager.controls.enableRotate = true;
+            });
+          }
         } else {
           SceneManager.tomi.disappear();
         }
-        if (tomiConf.position) {
-          const p = tomiConf.position;
-          const newp = new Vector3$1(
-            SceneConfig.tomiInitialPosition.x + p.x,
-            SceneConfig.tomiInitialPosition.y + p.y,
-            SceneConfig.tomiInitialPosition.z + p.z);
-          SceneManager.camera.position.clone();
-          SceneManager.controls.enableRotate = false;
-          SceneManager.tomi.moveTo(newp, true, SceneManager.camera, 'mid', (pos) => {
-            //s SceneManager.controls.target = pos;
-          }, () => {
-
-            SceneManager.controls.enableRotate = true;
-          });
-        }
+        
       }
 
 
@@ -106430,32 +106496,29 @@ const init = async () => {
         if (lastFX != '') iocScene.FX(lastFX).deactivate();
 
         switch (index) {
-          case 0:
-            SceneManager.tomi._defaultClip = 1;
-            SceneManager.tomi.play(1);
-            SceneManager.tomi.face.reset();
 
-            break
-          case 1:
+          // case 0:
 
-            // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
-            SceneManager.tomi.face.useAudio = false;
-            iocScene.FX('alarm').activate();
-            lastFX = 'alarm';
+          //   // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
+          //   SceneManager.tomi.face.useAudio = false;
+          //   iocScene.FX('alarm').activate();
+          //   lastFX = 'alarm';
 
-            break;
-          case 6:
-            SceneManager.tomi.face.useAudio = true;
-            setTimeout(_ => {
-              iocScene.FX('boss').activate();
-              lastFX = 'boss';
-            }, 2000);
+          //   break;
+          // case 6:
+          //   SceneManager.tomi.face.useAudio = true;
+          //   setTimeout(_ => {
+          //     iocScene.FX('boss').activate();
+          //     lastFX = 'boss';
+          //   }, 2000);
 
-            break;
+          //   break;
           default:
-            SceneManager.tomi.face.useAudio = true;
-
-            iocScene.nextVideo().mainLED();
+            if(data.interactive){
+              SceneManager.tomi.face.useAudio = true;
+              iocScene.FX(data.interactive).activate();
+              lastFX=data.interactive;
+            }
             break;
         }
       } else if (set === 'ioc') {
@@ -106492,9 +106555,9 @@ const init = async () => {
 
           default:
             SceneManager.tomi.showSets('');
-            //if (master.paused()) {
-            //master.resume();
-            //}
+            SceneManager.tomi._defaultClip = 1;
+            SceneManager.tomi.play(1);
+            SceneManager.tomi.face.reset();
             break;
         }
 

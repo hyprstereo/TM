@@ -13,7 +13,7 @@ export class SpriteButton extends THREE.Mesh {
         super(c, material);
         
         SpriteButton.__counter++;
-        //this.position.z =( -0.001 * SpriteButton.__counter);
+        this.position.z = (0.001 * SpriteButton.__counter);
         this.selected = false;
         this.maxScale = 1;
         this.heightRatio = 1;
@@ -21,9 +21,30 @@ export class SpriteButton extends THREE.Mesh {
         //
         this.layers.set(SpriteLayer);
         this.state = -1;
-       
+        this._oriPos = new THREE.Vector3()
+        this._pos2d = new THREE.Vector2(this.position.x, this.position.y);
+        this._t;
         this.hide();
+      
         return this;
+    }
+
+
+    set pos(v) {
+        this._pos2d = v;
+        this.position.x = v.x;
+        this.position.y = v.y;
+    }
+
+    get pos() {
+        return this._pos2d;
+    }
+
+    saveState() {
+        this._oriPos = this.position.clone();
+        this._pos2d.x = this.position.x;
+        this._pos2d.y = this.position.y;
+       // this.maxScale =  this.scale.x;
     }
 
     set interactive(state) {
@@ -38,6 +59,8 @@ export class SpriteButton extends THREE.Mesh {
         return await new Promise((res, rej) => {
             spriteLoader.load(src, (img) => {
                 this.heightRatio = img.image.height / img.image.width;
+                // this.scale.y = this.scale.x * this.heightRatio;
+                // this.scale.z = 
                 this.material.map = img;
                 res(this);
             }, null, (e) => rej(e));
@@ -57,15 +80,10 @@ export class SpriteButton extends THREE.Mesh {
                 self.hide();
             }
         });
-        // createjs.Tween.get(this.scale, {onComplete:()=>{
-        //     if (cb) cb(this.userData);
-        //     this.selected = false;
-        //     this.hide();
-        // }} ).wait(delay).to({x:scale, y: scale * this.heightRatio, z: scale}, 600, createjs.Ease.bounceOut);
     }
 
     show(delay = 0.2, scale = -1, complete = undefined) {
-        scale = this.maxScale;
+        scale = (scale<0)? this.maxScale : scale;
         const self = this;
         //createjs.Tween.get(this.scale).wait(delay).to({ x: scale, y: scale * this.heightRatio, z: scale }, 600, createjs.Ease.bounceOut);
         gsap.to(this.scale, {
@@ -86,5 +104,37 @@ export class SpriteButton extends THREE.Mesh {
                 if (complete)complete();
             }
         });
+    }
+
+    set opacity(v) {
+        this.material.opacity = v;
+    }
+
+    get opacity() {
+        return this.material.opacity;
+    }
+
+    slide(dir='right') {
+        const np = this.pos.clone();
+        let ox = 0, oy = 0;
+        switch(dir) {
+            case 'right':
+                ox = 0.1;
+                break
+            case 'left':
+                ox = -0.1
+                break;
+            case 'up':
+                oy = 0.1;
+                break;
+            case 'down':
+                oy = -0.1;
+                break;
+        }
+        np.x += ox;
+        np.y += oy;
+        if (this._t && this._t.running) this._t.kill();
+        this._t = gsap.to(this.pos, {x: np.x, y: np.y, duration: 0.8});
+        return this;
     }
 }

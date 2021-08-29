@@ -294,24 +294,26 @@ const init = async () => {
         }
         if (tomiConf.visible) {
           SceneManager.tomi.appear();
+          if (tomiConf.position) {
+            const p = tomiConf.position;
+            const newp = new THREE.Vector3(
+              SceneConfig.tomiInitialPosition.x + p.x,
+              SceneConfig.tomiInitialPosition.y + p.y,
+              SceneConfig.tomiInitialPosition.z + p.z);
+            const camPos = SceneManager.camera.position.clone();
+            SceneManager.controls.enableRotate = false;
+            //SceneManager.controls.lookAt(SceneManager.tomi);
+            SceneManager.tomi.moveTo(newp, true, SceneManager.camera, 'mid', (pos) => {
+              
+            }, () => {
+              //SceneManager.controls.lookAt();
+              SceneManager.controls.enableRotate = true;
+            });
+          }
         } else {
           SceneManager.tomi.disappear();
         }
-        if (tomiConf.position) {
-          const p = tomiConf.position;
-          const newp = new THREE.Vector3(
-            SceneConfig.tomiInitialPosition.x + p.x,
-            SceneConfig.tomiInitialPosition.y + p.y,
-            SceneConfig.tomiInitialPosition.z + p.z);
-          const camPos = SceneManager.camera.position.clone();
-          SceneManager.controls.enableRotate = false;
-          SceneManager.tomi.moveTo(newp, true, SceneManager.camera, 'mid', (pos) => {
-            //s SceneManager.controls.target = pos;
-          }, () => {
-
-            SceneManager.controls.enableRotate = true;
-          });
-        }
+        
       }
 
 
@@ -319,32 +321,29 @@ const init = async () => {
         if (lastFX != '') iocScene.FX(lastFX).deactivate();
 
         switch (index) {
-          case 0:
-            SceneManager.tomi._defaultClip = 1;
-            SceneManager.tomi.play(1);
-            SceneManager.tomi.face.reset();
 
-            break
-          case 1:
+          // case 0:
 
-            // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
-            SceneManager.tomi.face.useAudio = false;
-            iocScene.FX('alarm').activate();
-            lastFX = 'alarm';
+          //   // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
+          //   SceneManager.tomi.face.useAudio = false;
+          //   iocScene.FX('alarm').activate();
+          //   lastFX = 'alarm';
 
-            break;
-          case 6:
-            SceneManager.tomi.face.useAudio = true;
-            setTimeout(_ => {
-              iocScene.FX('boss').activate();
-              lastFX = 'boss';
-            }, 2000);
+          //   break;
+          // case 6:
+          //   SceneManager.tomi.face.useAudio = true;
+          //   setTimeout(_ => {
+          //     iocScene.FX('boss').activate();
+          //     lastFX = 'boss';
+          //   }, 2000);
 
-            break;
+          //   break;
           default:
-            SceneManager.tomi.face.useAudio = true;
-
-            iocScene.nextVideo().mainLED();
+            if(data.interactive){
+              SceneManager.tomi.face.useAudio = true;
+              iocScene.FX(data.interactive).activate();
+              lastFX=data.interactive;
+            }
             break;
         }
       } else if (set === 'ioc') {
@@ -381,9 +380,9 @@ const init = async () => {
 
           default:
             SceneManager.tomi.showSets('');
-            //if (master.paused()) {
-            //master.resume();
-            //}
+            SceneManager.tomi._defaultClip = 1;
+            SceneManager.tomi.play(1);
+            SceneManager.tomi.face.reset();
             break;
         }
 
