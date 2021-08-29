@@ -10,28 +10,32 @@
  *
  */
 
-import { createLoadScreen, loadAsset, sceneResize } from "./controllers/ioc.js";
 import { SceneManager } from "./controllers/view.js";
-import { GlobalProps, setupScreens } from "./scene/props.js";
-import { TOMIController, TomiFace } from "./controllers/tomi/tomi.controller.js";
-import { IOCScene } from "./scene/ioc.js";
+import { setupScreens } from "./scene/props.js";
+import { TOMIController } from "./controllers/tomi/tomi.controller.js";
+import { HTMLFrame, HTMLLayer, IOCScene } from "./scene/ioc.js";
 import * as THREE from '/build/three.module.js'
 import { createVideoElement } from "./interact/pano.js";
-import { Pointer3D } from "./interact/pointer.js";
+import { Indicator, Pointer3D } from "./interact/pointer.js";
 import { SpriteButton, SpriteLayer } from "./objects/sprites.js";
-import { TTS } from "./utils/tts.js";
-import { EditMode, setupEditor } from "./interact/ui.js";
+import { setupEditor } from "./interact/ui.js";
 import Stats from "./build/stats.module.js";
 import { degToRad } from "./utils/helpers.js";
-import { ActionProps, createGUIProp, showProps, TomiPositions, TomiProp } from "./scene/debug.js";
+import { ActionProps, showProps } from "./utils/tester.js";
 import { AnimaxTimeline } from "./controllers/anim.controller.js";
-import { MeshBasicMaterial, Scene } from "./build/three.module.js";
+import { createOverlay } from "./controllers/tomi/tomi.overlay.js";
+import { setupAudio } from "./controllers/tomi/tomi.audio.js";
+import { setupFacial } from "./controllers/tomi/tomi.facial.js";
+import { setupTOMIAnimator } from "./controllers/tomi/tomi.animator.js";
+import { GUIPanelRenderer } from "./utils/guipanel.renderer.js";
+import { createSpiderGame } from "./interact/web.game.js";
 
 const data = `[{"x":2.7278134036195496, "y": 1.183559422099973, "z": -3.2312832293855966},{"_x":-2.966433655861033,"_y":0.03200187598513606,"_z":3.135930225859582,"_order":"XYZ"}]`
 export const SceneConfig = {
-  StartPos: { x: 0, y: 0, z: 0 },
-  TomiInitialPosition: new THREE.Vector3(2.786939482308075, 1.48, -1.1),
-  TerminalPosition: JSON.parse(data),
+  startPos: { x: 0, y: 0, z: 0 },
+  tomiInitialPosition: new THREE.Vector3(2.786939482308075, 1.28, 0.3),
+  terminalPosition: { x: 2.7278134036195496, y: 1.183559422099973, z: -3.2312832293855966 },
+  terminalQuaternion: { "_x": -2.966433655861033, "_y": 0.03200187598513606, "_z": 3.135930225859582, "_order": "XYZ" },
   Assets: {
     Audio: {
       ioc: [
@@ -56,51 +60,66 @@ export const SceneConfig = {
     ]
   }
 }
-
 const iocScene = new IOCScene();
 const animax = new AnimaxTimeline();
 
-let pointer;
-let stats;
+let pointer, indicator;
+const _debug = {
+  stats: null,
+  panel: null,
+  mode: false
+};
 let autoplayTM;
-const ledSideT = new THREE.TextureLoader().load('/ui/ioc/screen/A13.png');
+const ledSideT = new THREE.TextureLoader().load('/ui/ioc/screen/A13.jpg');
 ledSideT.flipY = false;
 const ledSide = new THREE.MeshBasicMaterial({ map: ledSideT })
 const ledMats = [];
+let master = gsap.timeline();
+let avg;
+let gui;
 const init = async () => {
+  let htmlEl;
+
   // configure UI
-  if (EditMode) {
+  if (_debug.mode) {
     setupEditor(null);
-    stats = new Stats();
-    stats.showPanel(0);
-    document.body.appendChild(stats.dom);
+    _debug.stats = new Stats();
+    _debug.stats.showPanel(0);
+    document.body.appendChild(_debug.stats.dom);
   }
-  const { screen, fn } = createLoadScreen();
-  window.loadProgress = fn;
+
+  window.loadProgress = ({ loaded, total }) => {
+    console.log(`progress`, loaded, total)
+  };
   const build = await SceneManager.setup("#app").then((r) => r);
   const outline = build.composer.outline;
-
+  indicator = Indicator();
+  build.scene.add(indicator);
   SceneManager.ioc = iocScene;
 
   let id = 0;
 
   SceneManager.on("loadbegin", (e) => console.log("begin", e));
-  SceneManager.on("loadprogress", (e) => console.log("progress", e));
+  //SceneManager.on("loadprogress", (e) => console.log("progress", e));
   SceneManager.on("loadcomplete", (e) => {
+    //SceneManager.camera.updateMatrixWorld();
     let model = e.scene || e;
     if (id == 1) {
       SceneManager.scene.add(model);
       setupScreens(model, SceneManager.scene);
     } else if (id == 3) {
-      SceneManager.tomi = new TOMIController(e);
+      SceneManager.tomi = new TOMIController(e, 1, SceneManager);
+      SceneManager.tomi.use(setupFacial, setupTOMIAnimator, setupAudio, createOverlay, ActionProps);
 
       SceneManager.scene.add(SceneManager.tomi);
       SceneManager.tomi.position.set(
-        SceneConfig.TomiInitialPosition.x,
-        SceneConfig.TomiInitialPosition.y,
-        SceneConfig.TomiInitialPosition.z);
+        SceneConfig.tomiInitialPosition.x,
+        SceneConfig.tomiInitialPosition.y,
+        SceneConfig.tomiInitialPosition.z);
+      SceneManager.tomi.saveState();
       // SceneManager.tomi.mesh.position.set(0, 1, 0);
     } else if (id >= 4) {
+
       SceneManager.tomi.loadTracks(e, SceneConfig.Assets.Models[id]);
     } else {
       model.traverse(node => {
@@ -108,7 +127,12 @@ const init = async () => {
           if (node.name.startsWith('building003')) {
             node.visible = false;
           } else if (node.name.startsWith('led')) {
-            node.material = (node.name === 'led1') ? setupVideoPanel() : ledSide.clone();
+            node.material = ledSide.clone();
+            if (node.name === 'led1') {
+              setupVideoPanel(node.material)
+              node.layers.set(6);
+            }
+
             iocScene._leds.push(node);
             ledMats.push(node);
           }
@@ -125,71 +149,91 @@ const init = async () => {
   });
 
   SceneManager.on('beforeRender', (delta = 0) => {
-    stats.begin();
+    if (_debug.mode) _debug.stats.begin();
     animax.update(delta);
+    SceneManager.renderer.clear();
+    if (SceneManager.tomi.updateReflect && !SceneManager.done) {
+      SceneManager.tomi.updateReflect();
+      SceneManager.done = true;
+
+    }
   })
 
   SceneManager.on('afterRender', (delta = 0) => {
-    stats.end();
+    if (_debug.mode) _debug.stats.end();
+    // if (gui) {
+    //   SceneManager.renderer.clearDepth();
+    //   gui.onRender(delta);
+    //   console.log('gui', delta);
+
+    // }
   })
 
   SceneManager.on("loadfinished", async () => {
+    gui = await createSpiderGame('./icons.json');
+    console.log(gui);
+
+    // iocScene._leds[0].material.map = gui.stage;
+    // iocScene._leds[0].material.map.needsUpdate = true;
+
     window.addEventListener('resize', SceneManager._onResize.bind(SceneManager), false)
-    iocScene.createFX(SceneManager.scene);
+    iocScene.createFX(SceneManager.scene, SceneConfig);
     const list = await iocScene.loadVideoList();
     if (!list) {
       console.warn('video playlist is not available');
     }
-    //const p = confirm(`This website require user to interact first to allow audio/video normal playback.`)
-    //if (!p) return
-
     // create the content layer
     SceneManager.tomi.sortAnimationClips()
-    if (EditMode) {
-      animax.setElement();
-      showProps(SceneManager.tomi, SceneManager, animax);
 
+    _debug.panel = showProps(SceneManager.tomi, SceneManager, animax);
+    animax.setElement();
+    if (!_debug.mode) {
+      _debug.panel.hide()
     }
     SceneManager.tomi.play(1, THREE.LoopRepeat);
     SceneManager.tomi.rotateY(degToRad(180));
-    SceneManager.tomi.disappear();
 
-    const content = await iocScene.create(SceneManager.scene).then(obj => obj);
+
+    const content = await iocScene.create(SceneManager.scene, SceneConfig).then(obj => obj);
     SceneManager.scene.add(content);
 
     pointer = new Pointer3D(build.camera, build.scene, build.renderer.domElement, null, SpriteLayer, outline, true);
     iocScene.bindPointer(pointer);
-    const btnPos = new THREE.Vector3(SceneConfig.TerminalPosition[0].x, SceneConfig.TerminalPosition[0].y + .3, SceneConfig.TerminalPosition[0].z + 2);
+    const btnPos = new THREE.Vector3(SceneConfig.terminalPosition.x, SceneConfig.terminalPosition.y + .3, SceneConfig.terminalPosition.z + 2);
     content.position.copy(btnPos);
     content.children[0].rotateY(degToRad(90));
 
+    // SceneManager.scene.onUpdate = function() {
+    //     rendr.render(scene, this.sceneManager.camera);
+    // }
+
     pointer.on('pointertouch', ({ pos, objects }) => {
       if (objects.length) {
-        const sel = objects[0]
-       //console.log('down', sel);
+        const sel = objects[0];
+        console.log('down', sel);
+
       }
     });
 
     pointer.on('pointerup', ({ pos, objects }) => {
-      console.log('up', objects);
       if (objects.length <= 0)
         return
-      if (objects[0] instanceof SpriteButton) {
-        const sel = objects[0];
-        const data = objects[0].userData || {};
+      if (objects[0].object instanceof SpriteButton) {
+        const sel = objects[0].object;
+        const data = sel.userData || {};
 
         switch (data.content) {
           case 'move':
             SceneManager.controls.target = sel.userData.target;
             const p = SceneManager.tomi.position.clone();
             p.y = SceneManager.tomi.position.y + SceneManager.tomi.mesh.position.y;
-            SceneManager.controls.lookAt(p);
-            SceneManager.controls.moveTo(new THREE.Vector3(sel.userData.position.x, SceneConfig.TerminalPosition[0].y + .25, sel.userData.position.z), 0, () => {
+            //SceneManager.controls.target = p;
+            SceneManager.controls.moveTo(new THREE.Vector3(sel.userData.position.x, SceneConfig.terminalPosition.y, sel.position.z), 0, () => {
               const cpos = SceneManager.camera.position.clone();
               cpos.z += 0.01;
-              SceneManager.controls.c.target = cpos;
-              SceneManager.controls.c.enablePan = false;
-              SceneManager.controls.c.enableZoom = false;
+              SceneManager.controls.target = cpos;
+              SceneManager.controls.enablePan = false;
+              SceneManager.controls.enableZoom = true;
               iocScene.state = 1;
             });
             break;
@@ -208,17 +252,18 @@ const init = async () => {
             iocScene.state = 1;
             iocScene.Button(3).hide();
             break;
+          default:
+            if (data.activate) {
+              data.activate();
+            }
+            break;
         }
       }
     });
 
     iocScene.on('videoended', (e) => {
-      if (autoplayTM) {
-        clearInterval(autoplayTM);
-        autoplayTM = null;
-      }
       if (!iocScene.endOfList()) {
-        if (!iocScene.guides.next){
+        if (!iocScene.guides.next) {
           SceneManager.controls.lookAt(iocScene.Button(3).position, true);
           iocScene.guides.next = true;
         }
@@ -230,58 +275,123 @@ const init = async () => {
     })
 
     iocScene.on('newplaylist', (e) => {
-
-      //SceneManager.tomi.play(1);
       iocScene.Button(3).hide();
       iocScene.Button(4).hide();
-
     });
     animax.on('seek', (time) => {
       console.log(time, SceneManager.tomi.soundDuration().timeDisplay);
+    });
 
-      // if(SceneManager.tomi._sound) SceneManager.tomi._sound.pos = time;
-    })
+    let lastFX = 'alarm';
+    iocScene.on('onmediastart', (video, audio, set, index, tomiConf) => {
+      if (tomiConf) {
+        if (!tomiConf.specials) {
 
+         // iocScene.mainLED(iocScene.screenTexture());
+        }
+        if (tomiConf.visible) {
+          SceneManager.tomi.appear();
+        } else {
+          SceneManager.tomi.disappear();
+        }
+        if (tomiConf.position) {
+          const p = tomiConf.position;
+          const newp = new THREE.Vector3(
+            SceneConfig.tomiInitialPosition.x + p.x,
+            SceneConfig.tomiInitialPosition.y + p.y,
+            SceneConfig.tomiInitialPosition.z + p.z);
+          const camPos = SceneManager.camera.position.clone();
+          SceneManager.controls.enableRotate = false;
+          SceneManager.tomi.moveTo(newp, true, SceneManager.camera, 'mid', (pos) => {
+            //s SceneManager.controls.target = pos;
+          }, () => {
 
-    iocScene.on('onmediastart', (video, audio, set, index) => {
-      SceneManager.controls.lookAt(SceneManager.tomi.position.clone(), true);
-      animax.useMedia(video, SceneManager.tomi._sound, video.duration);
-      if (autoplayTM) {
-        clearInterval(autoplayTM);
-        autoplayTM = null;
+            SceneManager.controls.enableRotate = true;
+          });
+        }
       }
-      autoplayTM = setInterval(_ => {
-        const list = ["talkAction", "talkAction2", "talkAction3", "talkAction4", "eureka", "thinking", "sigh"]
-        const id = Math.min(Math.round(Math.random() * list.length), list.length-1);
-        SceneManager.tomi.actions(list[id])();
-        console.log('random', list[id]);
-      }, 1500);
-      //animax.newTrack(`${set}_${index}`);
-      //animax.play(`${set}_${index}`);
-      // const tl = gsap.timeline({repeat: 0})
 
 
+
+
+      // } else {
+      //   SceneManager.controls.lookAt(SceneManager.tomi.position.clone(), true);
+      // }
+
+      if (animax) animax.useMedia(video, SceneManager.tomi._sound, video.duration);
 
       if (set === 'cyber') {
-        switch (index) {
-          case 3:
-            if (autoplayTM) {
-              clearInterval(autoplayTM);
-              autoplayTM = null;
-            }
-            // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
-            SceneManager.tomi.face.useAudio = false;
-            iocScene.FX('alarm').activate();
+        if (lastFX != '') iocScene.FX(lastFX).deactivate();
 
-            break;
-          default:
-            iocScene.FX('alarm').deactivate();
+        switch (index) {
+          case 0:
             SceneManager.tomi._defaultClip = 1;
             SceneManager.tomi.play(1);
             SceneManager.tomi.face.reset();
+
+            break
+          case 1:
+
+            // SceneManager.tomi.playSound('/video/cyber/audio/C02.mp3', false);
+            SceneManager.tomi.face.useAudio = false;
+            iocScene.FX('alarm').activate();
+            lastFX = 'alarm';
+
+            break;
+          case 6:
             SceneManager.tomi.face.useAudio = true;
+            setTimeout(_ => {
+              iocScene.FX('boss').activate();
+              lastFX = 'boss';
+            }, 2000);
+
+            break;
+          default:
+            SceneManager.tomi.face.useAudio = true;
+
+            iocScene.nextVideo().mainLED();
             break;
         }
+      } else if (set === 'ioc') {
+        //SceneManager.tomi.face.useAudio = true;
+
+        //SceneManager.tomi.showOverlay(false);
+        switch (index) {
+          case 3:
+
+            //SceneManager.tomi.addIcon('alarm');
+            master = SceneManager.tomi.showSets('alarm maintainence escalator thumbsup', video.duration / 4);
+            break;
+          case 4:
+
+            avg = video.duration / 3;
+
+            if (master) master.clear();
+            master = SceneManager.tomi.showSets('cctv communicate support cctv2', avg, avg, 0);
+            break;
+          case 5:
+
+            avg = video.duration / 3;
+            master = SceneManager.tomi.showSets('traffic wireless support cars', avg, avg, avg, 0);
+            break;
+          case 7:
+
+            master = SceneManager.tomi.showSets('call escalator light', 0);
+            break;
+          case 8:
+            master = SceneManager.tomi.showSets('temphot maintainence support tempcold', 0);
+            // case 9:
+            //   master = SceneManager.tomi.showSets('complain maintanence support thumbsup', 0);
+            break;
+
+          default:
+            SceneManager.tomi.showSets('');
+            //if (master.paused()) {
+            //master.resume();
+            //}
+            break;
+        }
+
       }
     })
 
@@ -290,37 +400,54 @@ const init = async () => {
     })
 
     iocScene.on('statechange', (state) => {
+
       console.log(state);
       switch (state) {
         case 2:
-          SceneManager.tomi.appear();
           iocScene.setCurrentPlaylist('ioc');
-          iocScene.nextVideo();
+          SceneManager.tomi.play(1);
+          SceneManager.tomi.face.reset();
+          setTimeout(_ => {
+            iocScene.nextVideo().mainLED();
+          }, 800);
+
 
           break;
         case 3:
-          SceneManager.tomi.appear();
-          setTimeout(_=>{
-          
-            iocScene.setCurrentPlaylist('cyber');
-            iocScene.nextVideo();
-          }, 1000);
-          
+          iocScene.setCurrentPlaylist('cyber');
+          setTimeout(_ => {
+            SceneManager.tomi.play(1);
+            SceneManager.tomi.face.reset();
+            setTimeout(_ => {
+              iocScene.nextVideo().mainLED();
+            }, 800);
+          }, 800);
+
           break;
-        case 0:
+        // case 1:
+        //   setTimeout(_ => {
+        //     SceneManager.tomi.disappear();
+        //     iocScene.resetVideo();
+        //   }, 800);
+        //   break;
         default:
           SceneManager.tomi.disappear();
           iocScene.resetVideo();
+
+
           break;
       }
     })
-    btnPos.y = SceneManager.tomi.mesh.position.y;
-    SceneManager.controls.lookAt(btnPos);
-    setupVideoPanel();
 
+    //setupVideoPanel();
 
+    SceneManager.tomi.disappear();
     // start the scene
     SceneManager.play();
+    const campos = SceneManager.camera.position.clone();
+    campos.z += 0.01;
+    SceneManager.controls.target = campos;
+    // SceneManager.tomi.saveState();
 
 
     gsap.to(
@@ -332,12 +459,12 @@ const init = async () => {
 
     // starting position
     SceneManager.camera.layers.enableAll();
-    const pos = new THREE.Vector3(0, SceneConfig.TerminalPosition[0].y + .3, SceneConfig.TerminalPosition[0].z);
+    const pos = new THREE.Vector3(0, SceneConfig.terminalPosition.y, SceneConfig.terminalPosition.z);
     SceneManager.tomi.position.z -= 0.5;
-    SceneManager.controls.lookAt(pos);
-    SceneManager.controls.c.screenSpacePanning = true;
-    SceneManager.camera.position.set(0, SceneConfig.TerminalPosition[0].y + .3, -3.6778432270428207)
-    SceneManager.camera.layers.disable(7);
+    //SceneManager.controls.lookAt(pos);
+    SceneManager.controls.screenSpacePanning = true;
+    SceneManager.camera.position.set(0, SceneConfig.terminalPosition.y + .01, -3)
+    SceneManager.camera.layers.toggle(7);
   });
 
   SceneManager
@@ -347,15 +474,15 @@ const init = async () => {
     });
 };
 
-const setupVideoPanel = async (src = '/video/Fortinet Threat Map - Profile 1 - Microsoft_ Edge 2020-10-21 14-21-26.mp4') => {
-  const videoEl = await createVideoElement({ preload: false, autoplay: true }, src).then(v => v);
+const setupVideoPanel = async (mat, src = '/video/fortinet.mp4') => {
+  const videoEl = await createVideoElement({ preload: true, autoplay: true }, src).then(v => v);
   document.body.appendChild(videoEl);
   const videoTexture = new THREE.VideoTexture(videoEl);
   videoTexture.flipY = false;
-  const videoMat = new THREE.MeshBasicMaterial({ map: videoTexture });
+  mat.map = videoTexture;
   videoEl.play();
 
-  return videoMat;
+  return videoEl;
 }
 
 document.body.onload = async (evt) => {
@@ -365,22 +492,22 @@ document.body.onload = async (evt) => {
     if (e.key == 't') {
       iocScene.FX('alarm').activate();
     } else if (e.key == 'i') {
-      iocScene.state = 1;
+      iocScene.reset();
     } else if (e.key == 'p') {
       //const a = JSON.stringify([SceneManager.camera.position, SceneManager.camera.rotation]);
-      const i = (Math.random() * iocScene._pos.length);
-      SceneManager.tomi.moveToRef(i);
+      const i = (Math.random() * SceneManager.tomi._waypoints.length);
+      SceneManager.tomi.moveTo(SceneManager.tomi._waypoints[i]);
+      console.log(SceneManager.tomi._waypoints);
     } else if (e.key === 'x') {
-      // SceneManager.tomi
-      //   .playSound(SceneConfig.Assets.Audio[0])
-      //   .then((audio) => {
-      //     console.log('starts', audio);
-      //     audio.play();
-      //   });
-     // SceneManager.tomi.(new THREE.Vector3(0, 0 ,0))
+      if (SceneManager.tomi.overlayGroup.visible) {
+        SceneManager.tomi.showOverlay(false);
+      } else {
+        SceneManager.tomi.showOverlay(true);
+      }
     } else if (e.key === 'y') {
       //
-      SceneManager.tomi.action("intro")
+      SceneManager.camera.layers.toggle(7);
+      console.log(SceneManager);
 
       // speech.speak(text)
     } else if (e.key === 'z') {
@@ -388,6 +515,16 @@ document.body.onload = async (evt) => {
 
     } else if (e.key == 'u') {
       iocScene.nextVideo();
+    } else if (e.key == 'h' && e.shiftKey) {
+      if (!_debug.mode) {
+        _debug.mode = true;
+        _debug.stats.dom.style.display = 'visible'
+        _debug.stats.showPanel(0)
+      } else {
+        _debug.mode = false;
+        _debug.stats.dom.style.display = 'none'
+        _debug.panel.close();
+      }
     }
   });
 };

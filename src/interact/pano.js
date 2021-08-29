@@ -1,7 +1,5 @@
 import * as THREE from "/build/three.module.js";
-import { degToRad } from "../utils/helpers.js";
 import { OrbitControls } from "/js/jsm/controls/OrbitControls.js";
-import { SceneManager } from "../controllers/view.js";
 
 export const isVideo = (src) => {
   return src.endsWith(".webm") || src.endsWith(".mp4") || src.endsWith(".mov");
@@ -118,7 +116,7 @@ export class panoControl extends THREE.EventDispatcher {
     return this._target;
   }
 
-  
+
   update() {
 
     this.c.update()
@@ -140,6 +138,12 @@ export class panoControl extends THREE.EventDispatcher {
     this._lockTarget = target;
   }
 
+  centerPivot() {
+    const cpos = this.camera.position.clone();
+    cpos.z += 0.01;
+    this.target = cpos;
+  }
+
   lock() {
     this._locked = true;
     this.dispatchEvent({ type: "lock" });
@@ -154,7 +158,7 @@ export class panoControl extends THREE.EventDispatcher {
     // this.target = target;
     const self = this;
     let opos = new THREE.Vector3().copy(this.c.target);
-   
+
     if (tween) {
       if (!this._tweening) {
         this._tweening = true;
@@ -170,7 +174,7 @@ export class panoControl extends THREE.EventDispatcher {
           x: target.x, y: target.y, z: target.z, duration: 2, ease: 'sine.out', delay: 0.5, onComplete: () => {
             self._tweening = false;
           },
-          onUpdate:()=>{
+          onUpdate: () => {
             self.camera.lookAt(self._camLook);
           }
         })
@@ -213,3 +217,105 @@ export const drawTexture = async (src, w = 512, h = 512) => {
     img.src = src;
   });
 };
+
+
+export class EXRCamera extends OrbitControls {
+  constructor(camera, renderer, config = { target: null }) {
+    super(camera, renderer.domElement);
+    this.camera = camera;
+    this._locked = true;
+
+    this.isInteracting = false;
+
+    this.screenSpacePanning = false;
+    this.enablePan = true;
+    this._lockTarget = null;
+    this._tweening = false;
+    this._camLook = new THREE.Vector3();
+
+    return this;
+  }
+
+  get updated() {
+    return this.needsUpdating || this.isInteracting;
+  }
+
+  get isLocked() {
+    return this._locked;
+  }
+
+  lockOnTarget(target) {
+    this._lockTarget = target;
+    return this;
+  }
+
+  centerPivot() {
+    const cpos = this.camera.position.clone();
+    cpos.addScaledVector(new THREE.Vector3(0,0,0.01));
+    this.target = cpos;
+    return this;
+  }
+
+  async after(duration = 0) {
+    return await new Promise((res) => {
+      if (duration) {
+        setTimeout(_ => {
+          res(this);
+        }, duration)
+      }
+    })
+  }
+
+  lookOnSelf() {
+    
+  }
+
+  rotateTo(target, dur = 1) {
+    if(target instanceof THREE.Object3D) target = target.position.clone();
+    const v = new THREE.Vector3(0,0,0.01)
+    v.applyQuaternion(this.camera.quarternion);
+    const a = v.angleTo(target)
+    gsap.to(this.camera.rotation, { ...a, duration: dur, ease: 'sine.out' });
+  }
+
+  lock() {
+    this._locked = true;
+    this.dispatchEvent({ type: "lock" });
+  }
+
+  unlock() {
+    this._locked = false;
+    this.dispatchEvent({ type: "unlock" });
+  }
+
+  lookAt(target, tween = false, gaze = true) {
+    // this.target = target;
+    const self = this;
+    let opos = new THREE.Vector3().copy(this.target);
+
+    if (tween) {
+      if (!this._tweening) {
+        this._tweening = true;
+
+        gsap.to(this._camLook, {
+          x: target.x, y: target.y, z: target.z, duration: 2, ease: 'sine.out', delay: 0.5, onComplete: () => {
+            self._tweening = false;
+          },
+          onUpdate: () => {
+            self.camera.lookAt(self._camLook);
+          }
+        })
+      }
+    } else {
+      this.target = target;
+    }
+    this._target = target;
+  }
+
+  moveTo(target, delay = 0, complete = undefined, lookAt = undefined) {
+    let pos = target.clone();
+
+    gsap.to(this.camera.position, { ...pos, duration: 1, delay: delay, onComplete: complete })
+    // createjs.Tween.get(this.camera.position, { onComplete: complete }).wait(delay).to(pos, 1200);
+  }
+}

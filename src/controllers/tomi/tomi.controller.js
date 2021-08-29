@@ -1,11 +1,9 @@
 import * as THREE from "/build/three.module.js";
 import { GLTFLoader } from "/jsm/loaders/GLTFLoader.js";
-import { Facial } from "./tomi.facial.js";
 import { SceneManager } from "../view.js";
-import { ExportToGLTF, loadTextures } from "../../scene/props.js";
-import { SaveString } from "../../utils/helpers.js";
-import { ActionSets } from "../actions.js";
-import { TomiPositions } from "../../scene/debug.js";
+import { ExportToGLTF } from "../../scene/props.js";
+import { degToRad, SaveString } from "../../utils/helpers.js";
+import { setupReflection } from "./tomi.reflect.js";
 
 export class ActionSet {
   constructor(clip = undefined, loop = undefined, repeat = undefined, expression = undefined, ended = undefined) {
@@ -34,69 +32,44 @@ export class ActionSet {
   }
 }
 
-const ActionClip = {
-  greeting: 0,
-  idle: 1,
-  idle_afk: 2,
-  talk: 3
-}
-
-const NLA = {
-  intro: [ActionClip.idle, ActionClip.greeting, ActionClip.talk, ActionClip.idle_afk]
-}
-
-
-export const TomiFace = Facial();
-TomiFace.Face.reset();
-
 export class TOMIController extends THREE.Object3D {
-  constructor(mesh = undefined, scale = 1) {
+  constructor(mesh = undefined, scale = 1, sceneManager = undefined) {
     super();
+
+    this.sceneManager = sceneManager;
     this._autoAnimate = false;
-    this._facial = TomiFace;
     this._mixer = null;
     this._sounds = [];
     this._clips = [];
-    this._currentSequence = NLA.intro
     this._actionSet = {}
     this._sound;
-    this.mesh = mesh.scene || mesh;
+
     this.states = {};
-    this._state = "idle";
     this._face = null;
-    this.bones = {};
-    this.rigs = {};
-    this.useAnimations = true;
+    this._body = null;
     this._currentClip = null;
     this._currentAction = null;
     this._currentIndex = 0;
-    this._resetPose = false;
-    this._faceTexture = null;
-    this._faceState = 'idle';
+
     this._talking = false;
     this._lastElapse = 0;
-    this._effector = 0;
-    this._syncClip = -1;
-    this._reflect = null;
-    this._cubeRT = null;
+
     this._defaultClip = 1;
     this._actionCallbacks = {};
+
     this._root;
-    this.dataArray;
-    this.analyser;
     this._animating = false;
     this._currentActions = [];
     this._mainMaterials = null;
-    this._autoAnimTM = null;
+
     this._lookTarget = new THREE.Vector3();
-    // this.actions = ActionProps(this, this.face);
-    this._animSets = [this.actions.talkAction, this.actions.talkAction2, this.talkAction3, this.talkAction4,
-    this.actions.eureka, this.actions.talkAction, this.actions.talkAction2, this.talkAction3, this.talkAction4,
-    this.actions.eureka];
-    this._faceDim = {
-      col: 4,
-      row: 4,
-    };
+    this._plugins = {};
+
+    if (!mesh && !sceneManager)
+      return;
+
+    this.mesh = mesh.scene || mesh;
+
     if (mesh) {
       this.bind(this.mesh, scale)
       if (mesh.animations) {
@@ -105,26 +78,29 @@ export class TOMIController extends THREE.Object3D {
     }
   }
 
-  set selfAware(state) {
-    const self = this;
-    if (!state) {
-      if (self._autoAnimTM) {
-        clearInterval(self._autoAnimTM);
-        self._autoAnimTM = null;
-      }
+  use(...setupFn) {
+    setupFn.forEach(fn => {
+      fn(this);
+    })
+  }
+
+  usePlugin(name, setupFn) {
+    if (!this._plugins[name]) {
+      this._plugins[name] = setupFn(this);
+      console.log(`plugin :${name} installed`, this._plugins[name]);
     } else {
-
-      self._autoAnimTM = setInterval(_ => {
-        const list = ["talkAction", "talkAction2", "talkAction3", "talkAction4", "eureka", "thinking", "sigh"]
-        const id = Math.min(Math.round(Math.random() * list.length), list.length - 1);
-        self.actions(list[id]);
-      }, 1500);
-
+      console.log(`plugin ${name} is already installed`);
     }
   }
 
-  get selfAware() {
-    return (this._autoAnimTM !== null);
+  removePlugin(name) {
+    if (this._plugins[name]) {
+      delete this._plugins[name];
+    }
+  }
+
+  getPlugin(name) {
+    return this._plugins[name] || null;
   }
 
   defineActions(actions = {}) {
@@ -135,58 +111,6 @@ export class TOMIController extends THREE.Object3D {
     return this._actions[actionName] || null;
   }
 
-
-
-  get face() {
-    return this._facial.Face;
-  }
-
-  set face(f) {
-    this._facial.Face = f
-  }
-
-  get facial() {
-    return this._facial;
-  }
-
-  set facial(f) {
-    this._facial = f
-  }
-
-  addSound(...src) {
-    this._sounds.push(...src);
-    this._sound = new Howl({
-      src: this._sounds,
-      html5: true,
-      autoUnlock: true
-    });
-    const self = this;
-
-    this._sound.on('play', (e) => {
-      if (self._syncClip > -1) {
-        self.play(self._syncClip);
-      }
-    })
-  }
-
-  async loadSound(src, autoPlay = true) {
-    return await new Promise((res, rej) => {
-      const snd = new Howl({
-        src: [src],
-        useWebAudio: true,
-        html5: true,
-        autoplay: false,
-      });
-      let tm;
-
-
-      if (autoPlay) {
-
-      } else {
-        res(snd);
-      }
-    })
-  }
 
   get root() {
     return this._root;
@@ -203,18 +127,44 @@ export class TOMIController extends THREE.Object3D {
     }
   }
 
-  moveTo(newPos, tween = true, lookAt = undefined) {
+  moveTo(newPos, tween = true, lookAt = undefined, lookDur = 'update', update = undefined, complete = undefined) {
     if (tween) {
+      // const lookPos = (lookAt instanceof THREE.Object3D)? lookAt.position.clone() : {...lookAt};
       const tpos = { ...newPos }
-      tpos.y -= .5;
+      tpos.y += .25;
       const self = this;
       gsap.to(this.position, {
         ...tpos, duration: 2, onComplete: () => {
-          gsap.to(this, { ...newPos, duration: 2, ease: 'sine.out' });
+          // if (self.updateReflect) {
+          //   self.updateReflect();
+          //   self._mainMaterials.envMap = self._cubeRenderTarget.texture;
+          // }
+          gsap.to(this.position, {
+            ...newPos, duration: 2, ease: 'sine.out',
+            onUpdate: () => {
+              if (lookAt && lookDur === 'update') {
+                self.lookAt(lookAt, true);
+              }
+              if (update) update(this.position.clone())
+
+            }
+            , onComplete: () => {
+              //  if (self.updateReflect) {
+              //    self.updateReflect();
+              // //   self._mainMaterials.envMap = self._cubeRenderTarget.texture;
+              //  }
+              if (complete) complete();
+            }
+          });
         }, onUpdate: () => {
-          if (lookAt) {
+          // if (self.updateReflect) {
+          //   self.updateReflect();
+          //   self._mainMaterials.envMap = self._cubeRenderTarget.texture;
+          // }
+          if (lookAt && lookDur === 'mid') {
             self.lookAt(lookAt, true);
           }
+          if (update) update(this.position.clone())
         }
       })
     }
@@ -222,7 +172,7 @@ export class TOMIController extends THREE.Object3D {
   }
 
   moveToRef(index = 0) {
-    const ref = SceneManager.ioc._pos[index];
+    const ref = this._waypoints[index];
     console.log(ref);
 
     let rpos = new THREE.Vector3(ref.x, ref.y + .6, ref.z)
@@ -241,31 +191,72 @@ export class TOMIController extends THREE.Object3D {
     }
   }
 
+  async setupBodyTextures(config = { env: '/models/tomi/city_02.jpg', body: {} }) {
+    // const loader = new THREE.TextureLoader();
+    // const envTexture = (typeof config.env === 'string') ? await loader.load(config.env, t => t)
+    // : config.env;
+    // envTexture.mapping = THREE.EquirectangularReflectionMapping;
+
+    // const bodyTexture = await loader.load(`/models/tomi/tomi_col.jpg`, t=>t);
+    // bodyTexture.flipY = false;
+
+    // const bodyNormal = await new THREE.TextureLoader().load('/models/tomi/tomi_nrm.jpg', t => t);
+    // bodyNormal.flipY = false;
+
+    // const brough = await new THREE.TextureLoader().load('/models/tomi/tomi_rough.jpg', t => t);
+    // brough.flipY = false;
+
+    // const bmetal = await new THREE.TextureLoader().load('/models/tomi/tomi_metal.png', t => t);
+    // bmetal.flipY = false;
+
+    // const bodyMat = new MeshPhysicalMaterial({
+    //   color: 0xffffff,
+    //   encoding: THREE.sRGBEncoding,
+    //   reflectivity: 0.8,
+    //   map: bodyTexture,
+    //   envMap: envTexture,
+    //   normalMap: bodyNormal,
+    //   roughnessMap: brough,
+    //   metalnessMap: bmetal,
+    //   roughness: 0.9,
+    //   metalness: 1,
+    //   ...config.body,
+    // });
+
+    // const blue = new THREE.MeshLambertMaterial({
+    //   transparent: true,
+    //   opacity: 0.5,
+    //   emissive: 0x59F4F6,
+    //   side: THREE.DoubleSide
+    // });
+
+    // const faceMat = new THREE.MeshBasicMaterial({
+    //   map: self.face.texture,
+    //   envMap: city,
+    //   reflectivity: 0.1
+    // })
+
+    // this._materials = {
+    //   body: bodyMat,
+    //   blue: blue,
+    //   face: faceMat
+    // }
+    // return this._materials;
+  }
+
   async bind(mesh, scale = 1, reflect = false) {
+
+
     const city = new THREE.TextureLoader().load('/models/tomi/city_02.jpg');
     city.flipY = false;
     city.encoding = THREE.sRGBEncoding;
     city.mapping = THREE.EquirectangularReflectionMapping
 
     this.mesh = mesh;
-    this.add(mesh);
+    // this.add(mesh);
     mesh.position.set(0, 0, 0);
-    if (reflect) {
-      this._cubeRT = new THREE.WebGLCubeRenderTarget(256, {
-        format: THREE.RGBFormat,
-        generateMinmaps: true,
-        minFilter: THREE.LinearMipmapLinearFilter,
-        encoding: THREE.sRGBEncoding,
-      })
-      //this._cubeRT.texture.mapping = THREE.EquirectangularReflectionMapping
-      this._reflect = new THREE.CubeCamera(-1, 1000, this._cubeRT);
-      this.add(this._reflect);
-      this._reflect.position.set(0, 0, 0);
+    SceneManager.scene.background = city;
 
-      SceneManager.scene.background = this._cubeRT.texture;
-    } else {
-      SceneManager.scene.background = city;
-    }
     // this.add(this._reflect)
     // SceneManager._reflect.position.set(0, 0, 0)
 
@@ -283,25 +274,27 @@ export class TOMIController extends THREE.Object3D {
 
     const group = new THREE.Object3D();
     group.add(mesh);
-
     this.add(group);
     // mesh.scale.set(scale, scale, scale);
     const self = this;
-
+    const { cubeRenderTarget } = setupReflection(self);
+    //self.updateReflect();
+    if (cubeRenderTarget) SceneManager.scene.environment = cubeRenderTarget.texture;
     const shield = new THREE.MeshPhysicalMaterial({
       // side: THREE.DoubleSide,
-      combine: THREE.MultiplyOperation,
-      reflectivity: 0.8,
+      reflectivity: 1,
       map: body,
-      envMap: reflect ? this._cubeRT.texture : city,
+
       normalMap: bodyNormal,
+      normal: -1.00,
       roughnessMap: brough,
       metalnessMap: bmetal,
-      roughness: 0.9,
+      roughness: 0.6,
       metalness: 1,
-      color: 0xffffff,
+      color: 0xf4f4f4,
     });
     this._mainMaterials = shield;
+
     const hat = shield;//.clone()
     //SceneManager._reflect.texture.needsUpdate = true;
 
@@ -312,34 +305,24 @@ export class TOMIController extends THREE.Object3D {
       side: THREE.DoubleSide
     });
 
-    const faceMat = new THREE.MeshBasicMaterial({
-      map: self.face.texture,
-      envMap: city,
-      reflectivity: 0.1
-    })
-
-    // new THREE.TextureLoader().load("/models/texture/e.jpg", (t) => {
-    //   shield.envMap = t;
-    // });
-
-
     mesh.traverse((n) => {
       if (n.name.startsWith('Root')) {
         this._root = n;
       }
       if (n.type.endsWith("esh")) {
         if (n.material) {
-          n.material.side = THREE.DoubleSide;
+          //n.material.side = THREE.DoubleSide;
           n.material.transparent = true;
         }
-        n.castShadow = n.receiveShadow = true;
+        //n.castShadow = n.receiveShadow = true;
         if (n.name === "hat" && n.material.name === 'hat_mat') {
-          n.material = hat
+          self._hat = n;
+          n.material = shield.clone();
         } else {
 
           //sconsole.log('mat', n.material.name, n.material.map);
           if (n.material.name.startsWith('Material #63') || n.material.name === "body_mat") {
-            //shield.map = n.material.map;
+            self._body = n;
             n.material = shield;
           } else if (n.material.name.startsWith("Material #10")) {
             blue.map = n.material.map;
@@ -347,19 +330,23 @@ export class TOMIController extends THREE.Object3D {
             blue.transparent = true;
             n.material = blue;
           } else if (n.material.name === 'face_mat') {
-
-            n.material = faceMat;
-            self.face.update()
+            this._face = n;
+            //n.material = faceMat;
+            // if (self.face) {
+            //   self.face.update()
+            // }
             //self.facial.UpdatePath('left', 'happy')
           } else {
-            const etc = shield.clone()
-            //etc.map = n.material.map;
+            const etc = shield.clone();
+            etc.map = n.material.map;
             etc.color = n.material.color;
+            n.material = etc;
+
           }
         }
-      } else if (n.type == 'Bones') {
+      } else if (n.type == 'Bone') {
         if (n.name.startsWith('Hand')) {
-          const pl = new THREE.PointLight(0x00cbfe, 0.4, 0.1);
+          const pl = new THREE.PointLight(0x00cbfe, 0.5, 0.1);
           n.add(pl);
         }
       }
@@ -367,6 +354,18 @@ export class TOMIController extends THREE.Object3D {
     //SceneManager._reflect.texture.needsUpdate = true;
     //mesh.position.set(0, 1, 0);
     this.__init(mesh);
+  }
+
+  setEnvironment(src) {
+    if (typeof src === 'string') {
+      const texture = new THREE.TextureLoader().load(src, t => t);
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      this._mainMaterials.envMap = texture;
+    } else {
+      if (src instanceof THREE.Texture) {
+        this._mainMaterials.envMap = src;
+      }
+    }
   }
 
   async load(
@@ -404,8 +403,7 @@ export class TOMIController extends THREE.Object3D {
   }
 
   __init(m) {
-    m.layers.set(2);
-    const self = this;
+    m.layers.set(6);
   }
 
   lookAt(target, eyeLevel = true) {
@@ -413,7 +411,7 @@ export class TOMIController extends THREE.Object3D {
       target = target.position.clone();
     }
     if (eyeLevel) target.y = this.position.y;
-    this.mesh.lookAt(target)
+    this.children[0].lookAt(target);
 
   }
 
@@ -555,119 +553,19 @@ export class TOMIController extends THREE.Object3D {
     this.play(this._currentSequence[this._currentIndex])
   }
 
-  appear(clip = 0) {
-    if (!this.visible) {
-      this.visible = true;
-      this.play(clip);
-    }
+  saveState() {
+    this._originalPos = this.position.clone();
+  }
+
+  appear(clip = 0, from = undefined) {
+    this.visible = true;
   }
 
   disappear(clip = 0) {
     if (this.visible) {
       this.stopSound();
       this.visible = false;
-    }
-  }
 
-  startAnalyze() {
-    const mod = 128;
-    const mx = 5;
-    const self = this;
-    if (!this.__tm) {
-      this.__tm = setInterval(_ => {
-        self.analyser.getByteTimeDomainData(self.dataArray);
-        const id = self.dataArray[512] % mod;
-        const mouthIndex = Math.round(id / mod * mx)
-        self.face.setLip(mouthIndex);
-      }, 100);
-    }
-    return this.__tm;
-  }
-
-  async playSound(src, autoSpeak = true) {
-    return await new Promise((res, rej) => {
-      if (this._sounds[src]) {
-        this._sound = this._sounds[src];
-        if (this._sound.playing) {
-          this._sound.stop()
-        }
-        res(this._sound);
-        return
-      }
-      const self = this;
-      this.face.useAudio = autoSpeak;
-      this._sound = new Howl({
-        src: src,
-        autoplay: false,
-        userWebAudio: true,
-        onplay: () => {
-          self.face.talking = (self.face.useAudio);
-          if (!self.analyser) self.setupAnalyzer()
-          if (self.face.useAudio) self.startAnalyze();
-          // if (!this._aa) {
-          //   this._aa = true;
-          // } else {
-          //   if (self._autoAnimate && self.face.talking) 
-          //     self.randomClip();
-          // }
-
-          // self.play(0);
-          //self.dispatchEvent({ type: 'audioplay' });
-        },
-        onstop: () => {
-          if (self.__tm) {
-            clearInterval(self.__tm);
-            self.__tm = null;
-          }
-          self.face.talking = false;
-          //self.dispatchEvent({ type: 'audiostop' });
-        },
-        onended: () => {
-          if (self.__tm) {
-            clearInterval(self.__tm);
-            self.__tm = null;
-            self.face.talking = false;
-            //self.dispatchEvent({ type: 'audioend' });
-          }
-        }
-      });
-
-      this._sound.once('load', () => {
-        res(self._sound);
-      })
-      this._sounds[src] = this._sound;
-
-    });
-  }
-
-  soundPosition(tm = 0) {
-    if (this._sound) {
-      this._sound.pause();
-      this._sound.pos = tm;
-      this._sound.play();
-    }
-  }
-
-  disableAutoSpeak() {
-    if (this.__tm) {
-      clearInterval(this.__tm);
-      this.__tm = null;
-    }
-  }
-
-  soundDuration() {
-    if (this._sound && this._sound.playing) {
-      const seek = this._sound.seek() || 0;
-      const timeDisplay = formatTime(Math.round(seek));
-      const duration = this._sound.duration();
-      return { timeDisplay, seek, duration }
-    }
-    return null;
-  }
-
-  stopSound() {
-    if (this._sound && this._sound.playing) {
-      this._sound.stop();
     }
   }
 
@@ -680,6 +578,9 @@ export class TOMIController extends THREE.Object3D {
     if (act) {
       this.face.action(8, -1, -1, 100);
     }
+    // if (this.overlayGroup && this.overlayGroup.visible) {
+    //   this.overlayGroup.rotateY(0.12 * delta);
+    // }
     this.face.update(elapse);
     this._mixer.update(delta);
 
@@ -688,30 +589,6 @@ export class TOMIController extends THREE.Object3D {
   async loadTracks(scene, name = undefined) {
     scene.name = name;
     return this.__loadAnimations(scene, true);
-  }
-
-
-  setupAnalyzer(source = undefined) {
-    if (source instanceof HTMLVideoElement) {
-      const ctx = new webkitAudioContext();
-      const n = ctx.createMediaElementSource(source);
-      this.analyser = ctx.createAnalyser();
-      n.connect(this.analyser);
-      this.analyser.connect(ctx.destination);
-    } else {
-      this.analyser = Howler.ctx.createAnalyser();
-      Howler.masterGain.connect(this.analyser);
-      this.analyser.connect(Howler.ctx.destination);
-
-    }
-
-    // Creating output array (according to documentation https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API)
-    this.analyser.fftSize = 2048;
-    const bufferLength = this.analyser.frequencyBinCount;
-    this.dataArray = new Uint8Array(bufferLength);
-
-    // Get the Data array
-    this.analyser.getByteTimeDomainData(this.dataArray);
   }
 }
 
@@ -776,3 +653,14 @@ export const formatTime = (secs) => {
 
   return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
 }
+
+const waypoints = `[{"x":2.692347288131714,"y":1.3512234687805176,"z":-1.9569206237792969},
+{"x":1.9725112915039062,"y":1.164458990097046,"z":-2.0890021324157715},
+{"x":2.636974573135376,"y":1.3711497783660889,"z":-1.4529128074645996},
+{"x":4.232120990753174,"y":1.3711497783660889,"z":-1.4529128074645996},
+{"x":0.5577804446220398,"y":4.463057518005371,"z":10.336880683898926},
+{"x":2.692347288131714,"y":1.3512234687805176,"z":-1.9569206237792969},
+{"x":1.9725112915039062,"y":1.164458990097046,"z":-2.0890021324157715},
+{"x":2.636974573135376,"y":1.3711497783660889,"z":-1.4529128074645996},
+{"x":4.232120990753174,"y":1.3711497783660889,"z":-1.4529128074645996},
+{"x":0.5577804446220398,"y":4.463057518005371,"z":10.336880683898926}]`

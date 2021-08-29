@@ -1,17 +1,20 @@
-import { SceneConfig } from "../app";
 import * as THREE from "/build/three.module.js";
-import { SceneManager } from "../controllers/view";
 import Emitter from "../events/emitter";
 import { createVideoElement } from "../interact/pano";
 import { SpriteButton, SpriteLayer } from "../objects/sprites";
-import { degToRad } from "../utils/helpers";
-import { GLTFLoader } from "../jsm/loaders/GLTFLoader";
-import { TomiPositions } from "./debug";
-import { Mesh, MeshBasicMaterial } from "../build/three.module";
+import { CSS3DRenderer, CSS3DObject } from '/js/jsm/renderers/CSS3DRenderer.js';
+import { Actioneer, Timeliner } from "../media/timeliner";
+import { createInteractiveCanvas } from "../interact/web.game";
+import { GlobalProps } from "./props";
+import { MediaManager } from "../media/media.manager";
+import { MeshBasicMaterial } from "../build/three.module";
+import { dom } from "../build/dat.gui.module";
+
 
 export class IOCScene extends Emitter {
-    constructor() {
+    constructor(sceneMan = undefined) {
         super();
+        this.sceneManager = sceneMan;
         this._mainButton = [];
         this._group;
         this._container;
@@ -26,108 +29,200 @@ export class IOCScene extends Emitter {
         this._activeIndex = 0;
         this._audioList = [];
         this._currentSet = '';
+        this._oldSet = '';
         this._alarm = null;
+        this._volume = 0.5;
         this._fx = {};
         this._pos = [];
+        this.cssRenderer = new CSS3DRenderer();
+        this.cssRenderer.setSize(window.innerWidth, window.innerHeight)
+        this._mediaManager = new MediaManager();
+        this._configureMediaManager();
+        this._activeFX;
+        this._selected;
+
+        this.haveCss = false;
         this.guides = {
             next: false
         }
+        this.sets = {
+            ioc: new Timeliner(),
+            cyber: new Timeliner
+        }
+        this._activeTL = null;
+        this._data = null;
+        this._loading = false;
+    }
+
+    _configureMediaManager() {
+        const mediaMan = this._mediaManager;
+        const self = this;
+        mediaMan.on('canplay', (media, video, audio) => {
+            console.log('can play', media, video, audio);
+            self.emit('canplay', media, video, audio);
+        });
+
+        mediaMan.on('fullyready', (video, audio) => {
+            console.log('fullyready', video, audio);
+            self.emit('fullyready', this.currentItem, video, audio);
+
+
+            if (video.target) video.target.muted = false;
+            if (video.play) {
+                video.play()
+            }
+            if (audio && audio.play) {
+                audio.play();
+                if (video) video.muted = true;
+            }
+            if (video.target) {
+                video.target.play()
+            }
+            if (this._selected) {
+                if (video) video.muted = false;
+                if (video) video.volume = .5;
+                self.emit("onmediastart", video, audio, self._currentSet, self._selected.index, self._selected.data || { tomi: { visible: true } });
+            }
+            this._selected = null;
+
+        });
+
+        mediaMan.on('play', (e) => {
+
+            self.emit('play', e)
+        })
+
+        mediaMan.on('ended', (e) => {
+
+            console.log('ended', e);
+            self.emit('videoended', e);
+        })
+
+        const video = mediaMan.createVideoElement();
+        video.style.display = 'none';
+        const audio = mediaMan.createAudioElement();
+        audio.style.display = 'none';
+        if (video) {
+            document.body.appendChild(video);
+
+        }
+
+        if (audio) {
+            document.body.appendChild(audio);
+        }
+    }
+
+    get media() {
+        return this._videoEl;
+    }
+
+    set media(m) {
+        this._videoEl = m;
+    }
+
+    currentItem() {
+        if (this._activeList && this._activeIndex > -1) {
+            return this._activeList[this._activeIndex];
+        } else {
+            return null;
+        }
+    }
+
+    setupTimeline(...setups) {
+        const self = this;
+        setups.forEach((setup, i) => {
+            if (typeof setup === 'function') {
+                const ret = Object.apply(setup, [this.sets]);
+                if (ret) {
+                    if (ret instanceof Actioneer) {
+                        if (self._activeTL) {
+                            self._activeTL.add(ret);
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+
+    loadData(src) {
+        let data;
+        if (typeof src === 'string') {
+            data = JSON.parse(src);
+        } else {
+            data = src;
+        }
+        this._data = data;
+        return this._data;
     }
 
     /**
      * @source = ioc or cyber
      */
     setCurrentPlaylist(source = 'ioc', audioSource = undefined) {
-        this._currentSet = source;
-        this._activeIndex = 0;
-        this._activeList = this._videoList[source];
-        this._audioList = audioSource || [];
-        this.emit('newplaylist', this._activeList);
-    }
+        if (source !== this._oldSet) {
+            this._oldSet = this._currentSet;
+            this._currentSet = source;
+            this._activeIndex = 0;
+            this._activeList = this._videoList[source].items;
+            this._audioList = audioSource || [];
 
-    replay() {
-        const self = this;
-        this._videoEl = this._screenVideo.image;
-
-        if (this._videoEl) {
-            SceneManager.tomi.stopSound();
-            const self = this;
-            this._videoEl.pause();
-            this._videoEl.onloaded = (e) => {
-                console.log('loaded');
-                //self._videoEl.play();
-                self.emit('videoloaded', { event: e, el: this._videoEl });
-
-            };
-
-            this._videoEl.onended = (e) => {
-                self.emit('videoended', (e));
-            }
-            this._videoEl.onerror = (e) => {
-                this.emit('videoerror', e);
-            }
-            this._videoEl.onend = (e) => {
-                console.log('ended');
-            }
-            this._videoEl.src = this._activeList[this._activeIndex];
-            this._videoEl.muted = true;
-            this._videoEl.volume = 0.5;
-
-            SceneManager.tomi.playSound(this._activeList[this._activeIndex]).then(media => {
-                this._videoEl.muted = true;
-                this._videoEl.play();
-                if (media) {
-                    media.volume = 0.5;
-                    media.play();
-                }
-                self.emit("onmediastart", self._videoEl, media, self._currentSet, self._activeIndex);
-            })
+            this.emit('newplaylist', this._activeList, source, this._oldSet);
+        } else {
+            this._audioList = audioSource || [];
         }
     }
 
-    nextVideo() {
-        const self = this;
-        this._videoEl = this._screenVideo.image;
 
-        if (this._videoEl) {
-            SceneManager.tomi.stopSound();
-            const self = this;
-            this._videoEl.pause();
-            this._videoEl.onloaded = (e) => {
-                console.log('loaded');
-                //self._videoEl.play();
-                self.emit('videoloaded', { event: e, el: this._videoEl });
 
-            };
 
-            this._videoEl.onended = (e) => {
-                self.emit('videoended', (e));
-            }
-            this._videoEl.onerror = (e) => {
-                this.emit('videoerror', e);
-            }
-            this._videoEl.onend = (e) => {
-                console.log('ended');
-            }
-            this._videoEl.src = this._activeList[this._activeIndex];
-            this._videoEl.muted = true;
-            this._videoEl.volume = 0.5;
+    nextVideo(index = -1, showOnMain = false) {
 
-            SceneManager.tomi.playSound(this._activeList[this._activeIndex]).then(media => {
-                this._videoEl.muted = true;
-                this._videoEl.play();
-                if (media) {
-                    media.volume = 0.5;
-                    media.play();
-                }
-                self.emit("onmediastart", self._videoEl, media, self._currentSet, self._activeIndex);
-            })
-            if (!this.endOfList()) this._activeIndex++;
+      
+
+        if (!this.endOfList()) {
+            this._videoEl = this._screenVideo.image;
+
+            if (index>-1) this._activeIndex = index;
+            if (index<0) this._activeIndex++;
+            const mm = this._mediaManager;
+            const item = this.currentItem();
+            this._selected = item;
+            console.log(item);
+          
+            mm.play(item.data.src, item.data.audio);
+           
         }
+
+        return this;
+
     }
 
     endOfList() {
         return (this._activeIndex >= this._activeList.length - 1);
+    }
+
+    mainLED(src = undefined) {
+        if (src) {
+            if (src !== this._leds[1].material.map) {
+                this._oriSrc = this._leds[1].material.map;
+                this._leds[1].material.map = src;
+            }
+        } else {
+            this._leds[1].material.map = this._oriSrc;
+        }
+        return this;
+    }
+
+    loadScene(cat = 0, index = 0) {
+        const keys = Object.keys(this._videoList);
+        const sel = this._videoList[keys[cat]];
+        const item = sel.items[index];
+        console.log(sel.label, item.label);
+    }
+
+    screenTexture() {
+        return this._screenVideo;
     }
 
     async loadVideoList() {
@@ -141,52 +236,72 @@ export class IOCScene extends Emitter {
     }
 
     resetVideo() {
-        if (this._videoEl) {
-            console.log(this._videoEl, this._screenVideo);
-        }
+
+        this._mediaManager.pause();
     }
+    
 
-    selectedMonitor(target) {
+    async selectedMonitor(target) {
+        
+        const scss = document.createElement('div')
+        scss.style.display="block";
+        scss.style.width="1280px"
+        scss.height ="720px";
+        scss.style.background='#fff';
+        scss.style.color='#ffffff';
+        scss.style.background='#000';
+        scss.innerText="gabzilla";
+        
+        // this.scene.add(cssObj);
+        const cssObj = new CSS3DObject(scss);
+
+        const screenDom = document.createElement('div');
+        screenDom.display = 'block';
+        screenDom.width='1280px';
+        // const {stage, onRendor} = createInteractiveCanvas(document.body);
+        const planegeo = new THREE.PlaneGeometry()
+        const planeMat = new MeshBasicMaterial({color:0xff00000});
+
         this._monitor = target;
-        const box = new THREE.Box3().setFromObject(this._monitor)
-
+        console.log(this._monitor)
+        this._defaultTexture = target.material.map;
+        target.material.reflectivity = 0;
+        const box = new THREE.Box3().setFromObject(this._monitor);
+        //const canvasT = await stage.toCanvas({callback:(c)=>c})
+        //const rt = new THREE.CanvasTexture(canvasT);
+        //target.material.map = rt;
         // target.position.x = 0;
-        console.log(target.scale);
+        console.log(target)
+
         const size = box.getSize(target.position.clone())
         const hudgeo = new THREE.PlaneGeometry(size.x * 1.4, size.y * 1.4, 4, 4);
         const hudMat = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, opacity: 0, wireframe: false });
         this._hud = new THREE.Mesh(hudgeo, hudMat);
-        //this._hud.scale.set(-1, 1, 1);
 
-        //this._hud.position.y = (size.y * 1.1)/2;
-        //this._hud.position.x = (size.x * 1.1)/2;
         target.position.x += 0.0791;
+        target.add(new CSS3DObjectme
+            )
         this._hud.position.copy(target.position);
         this._hud.position.x -= 0.002;
         this._hud.position.y += (size.y * 0.65);
-        this._hud.position.z -= 0.08;
+        this._hud.position.z += 0.128;
         target.scale.x *= -1;
         //this._hud.position.z += (size.z * 0.5) + .081
+        
         target.parent.add(this._hud);
+        target.parent.add(cssObj)
+        document.body.appendChildcss
+
+        //this._monitor = target;
     }
 
-    async screenMonitorVideo(videoSrc) {
+    async screenMonitorVideo(videoSrc, deco = false) {
         const self = this;
         return await new Promise((res, rej) => {
             if (!this._screenVideo) {
-                createVideoElement({ preload: true, autoplay: false }, videoSrc).then(videoEl => {
-                    if (videoEl) {
-                        self._videoEl = videoEl;
-                        document.body.appendChild(videoEl);
-                        this._screenVideo = new THREE.VideoTexture(videoEl);
-                        this._screenVideo.flipY = false;
-                        videoEl.play()
-                        res(this._screenVideo);
-                    } else {
-                        rej('error video');
-                    }
-                });
-
+                this._screenVideo = new THREE.VideoTexture(this._mediaManager._videoEl);
+                this._screenVideo.flipY = false;
+                res(this._screenVideo)
             }
         })
 
@@ -202,7 +317,7 @@ export class IOCScene extends Emitter {
         })
     }
 
-    async create(scene = undefined) {
+    async create(scene = undefined, config = { terminalPosition: new THREE.Vector3(), tomiInitialPosition: new THREE.Vector3() }) {
         // this._container = 
         this._group = new THREE.Object3D();
         this._group.layers.set(SpriteLayer);
@@ -212,7 +327,10 @@ export class IOCScene extends Emitter {
             await new SpriteButton().load('/ui/cybersecurity/btn_cyber.png').then(s => s),
             await new SpriteButton().load('/ui/main/TEST.png').then(s => s),
             await new SpriteButton().load('/ui/main/next.png').then(s => s),
-            await new SpriteButton().load('/ui/main/restart.png').then(s => s)
+            await new SpriteButton().load('/ui/main/restart.png').then(s => s),
+            await new SpriteButton().load('/ui/reactive.png').then(s => s),
+            await new SpriteButton().load('/ui/proactive.png').then(s => s)
+
         );
 
         const btns = this._mainButton;
@@ -243,8 +361,8 @@ export class IOCScene extends Emitter {
             1.4184025920287329,
             -3.224884850247932);
         t.y = 1;
-        const npos = { ...SceneConfig.TerminalPosition[0] };
-        npos.y = SceneConfig.TomiInitialPosition.y;
+        const npos = config.terminalPosition;
+        npos.y = config.tomiInitialPosition.y;
         btns[2].userData = { content: "move", target: t, position: npos }
 
 
@@ -253,10 +371,10 @@ export class IOCScene extends Emitter {
         btns[3].position.x -= .48;
         btns[4].position.x = btns[3].position.x;
 
-        btns[3].position.z = -.25;
+
         btns[3].position.y += 0.1;
         btns[4].position.y = btns[3].position.y;
-        btns[4].position.z = -.25;
+
         btns[3].userData = { content: 'next' }
         btns[4].userData = { content: 'restart' }
         //btns[4].position.y -= 0.1;
@@ -265,98 +383,224 @@ export class IOCScene extends Emitter {
         //btns[4].state = 5;
         btns[4].hide();
 
+        const proact = btns[5];
+        const react = btns[6];
+
         //btns[2].lookAt(SceneManager.camera.position.clone())
+        this._hud.position.z = -0.26;
         this._hud.add(btns[3], btns[4]);
         this._hud.add(btns[0]);
         this._hud.add(btns[1]);
+        this._hud.add(proact);
+        this._hud.add(react);
+        proact.state = 0;
+        react.state = 0;
+        react.maxScale = proact.maxScale = 0.22;
+        react.position.x -= 4
+            // create screen css here
+
+            const cssScreenObj = new CSS3DObject(dom)
+            // end here
+        
+DocumentType.body.appendChild(
+
+)
+        proact.position.x = btns[0].position.x;
         this._group.add(btns[2]);
         // this._group.position.set(this._monitor.position.clone());
 
 
         this._buttons = btns;
 
+        this.__updateUI()
+        await this.createFX(scene, config);
 
-        this.createFX(scene);
-
-        this.__updateUI();
 
         return this._group;
     }
 
-    async createFX(scene) {
-        // this._monitor.add(this._group);
-        const alarm = new ScenePropFX();
-        let vrat;
+    async createFX(scene, config = { terminalPosition: new THREE.Vector3(), tomiInitialPosition: new THREE.Vector3() }) {
+        // this._leds[0].material = this._leds[1].material.clone();
+        // this._leds[2].material = this._leds[0].material;
+        // this._leds[0].material.image.src = 
+        // this._leds[0].material.map.flipY=true;
+        // this._leds[0].material = this._leds[1].material.clone();
+        // this._leds[2].material = this._leds[0].material;
+        // createVideoElement({ preload: true, autoplay: true }, '/video/n_ioc/Ioc_01_journey_1.mp4').then(videoEl => {
+        //     if (videoEl) {
+
+
+        //         document.body.appendChild(videoEl);
+        //         const vt = new THREE.VideoTexture(videoEl);
+        //         //vt.flipY = true;
+        //         vt.autoUpdate = true;
+
+        //         this._leds[0].material.map = vt;
+        //        // this._leds[2].material=this._leds[0].material;
+        //         this._leds[0].material.needsUpdate = true;
+        //         videoEl.play = true;
+
+        //     } else {
+        //         rej('error video');
+        //     }
+        // });
+
+
+
         const self = this;
-        new GLTFLoader().load('/models/ioc/virus-base.glb', (s) => {
-            const sce = s.scene || s;
+        const alarm = new FXWidget(this, scene);
+        const ratT = await new THREE.TextureLoader().load('/texture/ioc/rat.png', t => t);
 
-
-            const help = new THREE.AxesHelper(1);
-            help.layers.set(7);
-            const ratRef = help.clone();
-            ratRef.position.copy(sce.children[2].position);
-            ratRef.name = 'rat-ref';
-
-            const ratT = new THREE.TextureLoader().load('/texture/ioc/rat.png');
-            const ratio = ratT.height / ratT.width
-            const ratPlane = new THREE.PlaneGeometry(ratio, 1, 1);
-            vrat = new Mesh(ratPlane, new MeshBasicMaterial({ map: ratT, side: THREE.DoubleSide }));
-            vrat.position.copy(ratRef.position);
-            vrat.rotateX(degToRad(-90));
-
-            sce.children.forEach(n => {
-
-                const h = help.clone();
-                h.name = n.name;
-                h.position.copy(n.position);
-                self._pos.push(n.position.clone());
-                scene.add(h);
-            });
-            scene.add(ratRef);
-
-
-            alarm.add(vrat);
-            alarm.add(sce);
-        });
-
-
-
+        const ratio = ratT.height / ratT.width
+        const ratPlane = new THREE.PlaneGeometry(1, 1, 1);
+        const vrat = new THREE.Mesh(ratPlane, new THREE.MeshBasicMaterial({ map: ratT, side: THREE.DoubleSide, transparent: true }));
+        vrat.position.set(-0.06, 4.463, 10.337);
         const redLight = new THREE.AmbientLight(0xff0000, 2.0);
-        // const redHelper = new THREE.PointLightHelper(redLight, 0.1, 0xff00ff);
-        // redHelper.layers.set(7);
-        // redLight.add(redHelper);
+        const ledPos = this._leds[1].position.clone();
+        const monitorPos = config.terminalPosition;
+        monitorPos.z -= 0.2;
+        monitorPos.y += 0.2;
+
+        const redBtn = await new SpriteButton().load('/texture/ioc/redbtn.png', t => t);
+        redBtn.maxScale = 0.05;
+        redBtn.position.x -= 0.3;
+        //redBtn.position.z -= 0.1;
+
+        this._hud.add(redBtn);
+
 
         redLight.position.set(0, 3, 4);
-        const tween = gsap.to(redLight, 2, { intensity: 0.5, yoyo: true, repeat: -1 });
+        const tween = gsap.fromTo(redLight, 2, { intensity: 2 }, { intensity: 0.5, yoyo: true, repeat: -1 });
+        alarm.tween = tween;
+        alarm.sound0 = new Howl({
+            src: ['/video/cyber/audio/C02a.mp3'],
+            html5: true,
+            autoplay: false
+        });
+        alarm.sound1 = new Howl({
+            src: ['/video/cyber/audio/C02b.mp3'],
+            html5: true,
+            autoplay: false
+        });
+        alarm.sound0.onend = function () {
+            alarm.iocScene.nextVideo(1);
+        }
+        // alarm.sound1 = new Howl({
+        //     src: ['/video/cyber/audio/C02b.mp3'],
+        //     html5: true,
+        //     autoplay: false
+        // }) 
+        alarm.add(redLight);
+        alarm.add(vrat);
+        alarm.rat = vrat;
 
-        const ratMesh = await new SpriteButton().load('/texture/ioc/VirusRat.png');
-        const ledPos = this._leds[1].position.clone();
-        const monitorPos = this._monitor.position.clone();
-        alarm
-            .create(scene, redLight, ratMesh)
-            .setAudio("/video/cyber/audio/C01.mp3", "/video/cyber/audio/C02a.mp3", "/video/cyber/audio/C02b.mp3")
-            .story = {
-            start: () => {
-                ratMesh.position.x = ledPos.x;
-                ratMesh.position.y = ledPos.y;
-                ratMesh.position.z = ledPos.z - .5;
+        vrat.position.z -= 0.5;
+        alarm.create(
+            function (a) {
 
-                tween.pause();
-                alarm._howl.stop();
+                a.rat.position.set(0, 4.463, 10.337);
+                a.rat.scale.set(3, 3, 3);
+                a.rat.visible = false;
             },
-            active: () => {
-                gsap.to(ratMesh.position, 2, { x: monitorPos.x, y: monitorPos.y, z: monitorPos.z });
-                alarm._howl.play();
-                tween.play();
+            function (a) {
+                //self._leds[2].material = GlobalProps.screens['monitor'].material;
+                alarm.tween.play();
+                redLight.visible = true;
+                alarm.rat.visible = true;
+                const delay = 18;
+                alarm.t = gsap.fromTo(alarm.rat.position, { x: 0, y: 4.463, z: 10.337 }, {
+                    x: 2.56, y: 1.67, z: -1.65, duration: 2, delay: delay, onComplete: () => {
+                        const s = new THREE.Vector3(0.3, 0.3, 0.3);
+                        alarm.t = gsap.fromTo(alarm.rat.scale, { x: 4, y: 4, z: 4 }, {
+                            ...s,
+                            duration: 2, delay: delay, onComplete: () => {
+                                alarm.sound0.play();
+                                redBtn.show();
+                            }
+                        });
+                    }
+                });
+
+                // });
+
             },
-            success: () => {
-                alarm._howl.stop();
-                tween.stop();
+            function (a) {
+                redLight.visible = false;
+                alarm.rat.visible = false;
+                alarm.tween.pause(0);
+                redBtn.hide();
+                if (alarm.t) alarm.t.pause(0);
+                alarm.sound1.play();
+                if (alarm.iocScene._mediaManager) {
+                    alarm.iocScene._mediaManager.pause();
+                };
+
+                setTimeout(_ => {
+                    alarm.iocScene.nextVideo();
+                }, 2000);
+
+            },
+            function (a) {
+
+                redBtn.hide();
+                redLight.visible = false;
+                alarm.rat.visible = false;
+                //alarm.tween.pause();
+                alarm.sound0.stop();
             }
-        };
+        );
+        redBtn.userData = {
+            activate: () => {
+                alarm.next();
+            },
+            content: 'red-btn'
+        }
         this._fx['alarm'] = alarm;
+
+        const boss = new FXWidget(this, scene);
+        boss.pillBlue = await new SpriteButton().load('/texture/ioc/blue.png', t => t);
+        boss.pillRed = await new SpriteButton().load('/texture/ioc/red.png', t => t);
+        boss.pillBlue.position.copy(monitorPos);
+        boss.pillRed.position.copy(monitorPos);
+        boss.pillRed.position.x -= .5;
+        boss.pillBlue.position.x += .5;
+        // boss.pillBlue.position.z = boss.position.z = 0;
+        boss.pillRed.maxScale = boss.pillBlue.maxScale = 0.3;
+        boss.pillBlue.userData = {
+            content: 'pill-blue',
+            activate: () => {
+                alarm.iocScene.nextVideo(6);
+            }
+        }
+        boss.pillRed.userData = {
+            content: 'pill-red',
+            activate: () => {
+                alarm.iocScene.nextVideo(7);
+            }
+        }
+        boss.create(
+            function () {
+                boss.add(boss.pillBlue, boss.pillRed);
+            },
+            function () {
+                boss.pillBlue.show();
+                boss.pillRed.show();
+            },
+            function () {
+                boss.pillBlue.hide();
+                boss.pillRed.hide();
+            },
+            function () {
+                boss.pillBlue.hide();
+                boss.pillRed.hide();
+            }
+        )
+        this._fx['boss'] = boss;
+
+
+
     }
+
 
     FX(name) {
         return this._fx[name];
@@ -372,6 +616,21 @@ export class IOCScene extends Emitter {
         this.__updateUI();
     }
 
+    resetFX() {
+        const fx = this._fx;
+        for (let n in fx) {
+            fx[n].reset();
+        }
+    }
+
+    reset() {
+        this.state = 1;
+        this.mainLED();
+        this.resetFX();
+        this._currentSet = ''
+        this._monitor.material.map = this._defaultTexture;
+    }
+
     Button(index) {
         return this._buttons[index];
     }
@@ -380,10 +639,10 @@ export class IOCScene extends Emitter {
         this._buttons.forEach((b, i) => {
             const s = b.state;
             if (this._state === s) {
-                b.show(i * 50, (i < 2) ? .5 : 1);
+                b.show(i * .25, (i < 2) ? .5 : 1);
             } else {
                 if (!b.selected)
-                    b.hide(i * 50);
+                    b.hide(i * .25);
             }
         })
     }
@@ -409,7 +668,7 @@ export class ScenePropFX extends THREE.Object3D {
     constructor() {
         super();
         this._enabled = false;
-        this._howl = null;
+        this._howl = [];
         this._story = {
             start: null,
             active: null,
@@ -420,13 +679,25 @@ export class ScenePropFX extends THREE.Object3D {
     }
 
     setAudio(...src) {
-        this._howl = new Howl({
-            src: src,
-            html5: true,
-            volume: 1,
-            autoplay: false
-        });
+        src.forEach(s => {
+            this._howl.push(new Howl({
+                src: src,
+                html5: true,
+                volume: 1,
+                autoplay: false
+            }));
+        })
+
         return this;
+    }
+
+    reset() {
+        //if (this._story.reset)this._story.reset();
+        if (this._howl) {
+            this._howl.forEach(h => {
+                h.stop();
+            })
+        }
     }
 
     set story(s) {
@@ -452,11 +723,12 @@ export class ScenePropFX extends THREE.Object3D {
     activate() {
 
 
+
+        this._scene.add(this);
+        this.visible = true;
         if (this._story.active) {
             this._story.active();
         }
-        this._scene.add(this);
-        this.visible = true;
         this.dispatchEvent({ type: 'activated' });
         return this;
     }
@@ -466,15 +738,98 @@ export class ScenePropFX extends THREE.Object3D {
             this._activator(true);
         }
         this.visible = false;
-        this.dispatchEvent({ type: 'deactivated' });
+
         if (this._story.success) {
             this._story.success();
         }
         this._scene.remove(this);
+        this.dispatchEvent({ type: 'deactivated' });
         return this;
     }
 
     respond(opts = 0) {
 
     }
+}
+
+export class FXWidget extends THREE.Object3D {
+    constructor(iocScene, scene) {
+        super();
+        this.scene = scene;
+        this.iocScene = iocScene;
+
+        this._assets = [];
+        this._inits = [];
+        this._activates = [];
+        this._nexts = [];
+        this._deactivates = [];
+        this.scene.add(this)
+    }
+
+    create(inits, activates, nexts, deactivates) {
+        this._inits = [inits];
+        this._activates = [activates];
+        this._nexts = [nexts];
+        this._deactivates = [deactivates];
+        this._inits.forEach(init => {
+            init(this);
+        });
+        this.visible = false;
+    }
+
+    activate() {
+        this.iocScene._activeFX = this;
+        this.visible = true;
+        const self = this;
+        this._activates.forEach(act => {
+            act(self);
+        })
+    }
+
+    next() {
+        const self = this;
+        this._nexts.forEach(n => {
+            n(self);
+        })
+    }
+
+    reset() {
+        this.deactivate();
+    }
+
+    deactivate() {
+        const self = this;
+        this._deactivates.forEach(deac => {
+            deac(self);
+        })
+    }
+}
+
+export const HTMLLayer = (target, lyr) => {
+    const layer = new CSS3DObject(lyr);
+    layer.position.set(0, 1, 0);
+    target.add(layer);
+
+    const rendr = new CSS3DRenderer();
+
+    return {
+        rendr,
+        layer
+    }
+}
+
+export const HTMLFrame = (src) => {
+    const dom = document.createElement('iframe');
+    dom.sandbox = 'allow-scripts'
+    dom.allow = 'microphone; camera'
+    dom.allowFullscreen = true;
+    dom.style.position = 'absolute';
+    dom.style.display = 'block';
+    dom.style.zIndex = 100;
+    dom.width = 800;
+    dom.height = 600;
+
+    document.body.appendChild(dom);
+    dom.src = src;
+    return dom;
 }

@@ -81,7 +81,7 @@ export class AnimaxTimeline extends Emitter {
         const el = document.createElement('div');
         el.style.position = 'absolute';
         el.style.zIndex = 100;
-        el.style.height = '1rem';
+        el.style.height = '0.3rem';
         el.style.fontSize = '0.7rem';
         el.style.width = '100%';
         el.style.display = `inline-flex`;

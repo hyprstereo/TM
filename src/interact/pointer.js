@@ -2,6 +2,7 @@ import * as THREE from "/build/three.module.js";
 import { SceneManager } from "../controllers/view.js";
 import Emitter from "../events/emitter.js";
 import { SpriteButton, SpriteLayer } from "../objects/sprites.js";
+import { degToRad } from "../utils/helpers.js";
 
 export const Selects = {
   child: []
@@ -58,26 +59,27 @@ export class Pointer3D extends Emitter {
     }
   }
 
-  addSelected(object) {
+  addSelected(res) {
     this.selectedObjects = [];
-    if (!(object instanceof SpriteButton))
-      Selects.child = [object];
+    if (!(res.object instanceof SpriteButton))
+      Selects.child = [res.object];
 
-    this.selectedObjects.push(object);
+    this.selectedObjects.push(res);
 
   }
 
   chkIntersection() {
-    const intersects = this.pick();
+    const {intersects} = this.pick();
     if (intersects.length > 0) {
       const res = intersects[0];
       if (res.object instanceof SpriteButton) {
-        this.emit('buttonselected', res.object);
+        this.emit('buttonselected', res);
       }
-      this.addSelected(res.object);
+      this.addSelected(res);
 
     } else {
       this.selectedObjects = [];
+      this._listener.style.cursor = 'default';
     }
   }
 
@@ -85,7 +87,8 @@ export class Pointer3D extends Emitter {
     this.raycaster.setFromCamera(this.cursor, SceneManager.camera);
     const intersects = this.raycaster.intersectObject(this._target, true);
     const results = intersects.filter((res) => res && res.object);
-    return results;
+    
+    return {results, intersects};
   }
 
   onPointerMove(event) {
@@ -96,7 +99,6 @@ export class Pointer3D extends Emitter {
       if (this._pointerDown && this.selectedObjects.length <= 0) return;
       this.chkIntersection();
       if (this._outline) this._outline.selects = [this.selectedObjects];
-
       this._listener.style.cursor = (this.selectedObjects.length) ? 'pointer' : 'default';
       this.emit("pointermove", { pos: this.cursor, objects: this.selectedObjects });
     }
@@ -109,6 +111,7 @@ export class Pointer3D extends Emitter {
     this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.cursor.y = -(event.clientY / window.innerHeight) * 2 + 1;
     this.chkIntersection();
+
     this.emit("pointertouch", { pos: this.cursor, objects: this.selectedObjects });
   }
 
@@ -116,6 +119,7 @@ export class Pointer3D extends Emitter {
     if (!event.isPrimary) return;
     this.cursor.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.cursor.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
     this.emit("pointerup", { pos: this.cursor, objects: this.selectedObjects });
     this._pointerDown = false;
   }
@@ -159,4 +163,43 @@ export class PickHelper {
       this.pickedObject.material.emissive.setHex((time * 8) % 2 > 1 ? 0xFFFF00 : 0xFF0000);
     }
   }
+}
+
+export const makePickable = (target, conf = { data: null, type: null, states: null, onHit: undefined, cursor: 'pointer' }) => {
+  if (target instanceof THREE.Object3D) {
+    const newConfig = {
+      label: conf.label || target.name,
+      selected: conf.selectable ? false : null,
+      states: conf.states || null,
+      data: conf.data || null,
+      onHit: conf.onHit || null,
+      cursor: conf.cursor || 'default'
+    }
+    target.userData = {
+      ...target.userData,
+      ...newConfig,
+    };
+    target.layers.set(SpriteLayer);
+    return target;
+  } else {
+    return;
+  }
+}
+
+export const Indicator = (clr = 0xffffff, height = 1.3) => {
+  const circle = new THREE.EllipseCurve(0, 0, 0.3, .3, 0, 2 * Math.PI, false, 0);
+  const lineMat = new THREE.LineDashedMaterial({color: clr, linewidth: 1, dashSize: 3, gapSize: 1, scale: 1});
+  const points = circle.getPoints(50);
+  points.push(new THREE.Vector3(0, 0, 0));
+  points.push(new THREE.Vector3(0, 0, height * .5));
+  points.push(new THREE.Vector3(0, 0, height));
+
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const ind = new THREE.Line(geo, lineMat);
+  const grp = new THREE.Object3D(); 
+
+  grp.add(ind);
+  ind.rotateX(degToRad(-90));
+  ind.position.y = 0.01;
+  return grp;
 }

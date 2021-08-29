@@ -68,7 +68,6 @@ export const Facial = (w = 512, h = 512) => {
 
     const texture = new THREE.CanvasTexture(canv);
     texture.flipY = false;
-    const svgChild = svg.querySelector('svg');
     const ctx = canv.getContext('2d');
     let rendering = false;
     const shield = document.createElement('img');
@@ -198,17 +197,24 @@ export const Facial = (w = 512, h = 512) => {
         states: [],
     }
 
-    const UpdatePath = (from, to, autoUpdate = true) => {
-        // const Ref = (from === 'mouth') ? Mouths : Eyes;
-        // Face[from].path.setAttribute('d', Ref[to])
-
-        // if (autoUpdate) updateTexture();
-    }
+    const faceTexture = new THREE.MeshBasicMaterial({
+        map: texture,
+        metalness: 0.4,
+        roughness: 0.4,
+        reflectivity: 0.5,
+    });
     return {
         svg,
         Face,
-        UpdatePath,
+        faceTexture,
     }
+}
+
+export const setupFacial = (tomi) => {
+    const {svg, Face, faceTexture} = Facial(512, 512);
+    tomi.face = Face;
+    tomi._face.material = faceTexture;
+    //tomi.facial = TomiFace;
 }
 
 export function clean(path) {

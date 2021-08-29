@@ -1,7 +1,7 @@
 import * as THREE from "/build/three.module.js";
 import { Pointer3D } from "../interact/pointer.js";
 import { SpriteLayer } from "../objects/sprites.js";
-import { setupScene, setupControls, SETTINGS } from "../scene/config.js";
+import { setupScene, setupControls, SETTINGS } from "../scene/builder.js";
 import { LoadAssets } from "../scene/props.js";
 import { TOMIController } from "./tomi/tomi.controller.js";
 

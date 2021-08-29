@@ -2,32 +2,140 @@
 <html lang="en">
 
 <head>
-  <base href="./" target="_blank" />
   <meta charset="UTF-8" />
   <link rel="icon" href="/favicon.ico" />
-  <link type="text/css" rel="stylesheet" href="css/loading.css">
-  <link type="text/css" rel="stylesheet" href="css/iocstyle.css">
+  <link type="text/css" rel="stylesheet" href="css/main.css">
+  <link type="text/css" rel="stylesheet" href="css/menu.css">
+  <link type="text/css" rel="stylesheet" href="/css/loading.css">
+  <link type="text/css" rel="stylesheet" href="/css/iocstyle.css">
+  <link type="text/css" rel="stylesheet" href="/css/tmui/tmui.css">
+	
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TM ONE 1.5</title>
+  <script src="/js/tmui/tmui.js"></script>
 </head>
 
 <body>
   <section id="loading-screen" class="overlay">
     <div id="loader-content">
       <div id="loader"></div>
-      <div class="fade-in"><img style="max-width:95px;" src="texture/TMONE_logo.png"></div>
-      <div class="btn-text"><img style="max-width:150px;" src="texture/XR.png"></div>
+      <div class="fade-in"><img style="max-width:95px;" src="/texture/TMONE_logo.png"></div>
+      <div class="btn-text"><img style="max-width:150px;" src="/texture/XR.png"></div>
     </div>
   </section>
+  <!-- Main Menu-->
+<div class="logo2">
+	<div><a href="/index.html"><img src="/texture/TMONE_logo_border.png"></a></div>	
+</div>
+
+<div class="logo-base"><a href="/"><img src="/texture/Base.png"></a></div>
+
+<div id="btn_char_holder" class="char_btn" style="opacity:0;">
+	<button id="btn_char"><img src="/texture/home/tomi_talk_me.png"></button>
+	<button id="btn_zoomin"><img src="/texture/home/btn_zoomin.png"></button>
+	<button id="btn_zoomout"><img src="/texture/home/btn_zoomout.png"></button>
+</div>
+
+<div id="menu" style="background:rgba(0,0,0,0);">
+	<input type='checkbox' class='menu-toggler' id='menu-toggler'>
+	<audio id="audioclick" src="/audio/clicktech.wav"></audio>
+	<ul style="padding:0;margin:0;">
+		<li class='menu-item3'>
+			<audio id="audio1" src="/audio/mainmap/1.mp3"></audio>
+			
+			<div id="maptomi">
+				<button id="closetomi">
+					<img src="/texture/home/btn_close.png">
+				</button>
+				<img id="tomiimg" src="/texture/cm_play_btn_idle.png">
+			</div>
+
+			<!-- Main Area -->
+			<div id="btn_center_content" class="center_content_holder">
+				<div class="center_content_100">
+					<h1 class="center_content_h1">XR CITY HOMEPAGE</h1>
+				</div>
+				<div class="center_content_50">
+					<div id="btn_play" class="center_content_100 margin_20">
+						<img class="center_content_img" src="/texture/home/tmhome_play.png">
+					</div>
+					<div id="btn_tech" class="center_content_100 margin_20">
+						<img class="center_content_img" src="/texture/home/tmhome_tech.png">
+					</div>
+				</div>
+				<div id="btn_contact" class="center_content_50">
+					<img class="center_content_img" src="/texture/home/tmhome_contact.png">
+				</div>
+			</div>
+
+			<!-- Tech description Area -->
+			<div id="btn_tech_popup" class="center_content_holder_tech" style="display:none;opacity:0;">
+				<div class="center_content_100">
+					<h1 class="center_content_h2">XR CITY TECHOLOGY REQUIREMENTS</h1>
+				</div>
+				<div class="center_content_5" id="btn_tech_back">
+					<img class="center_contentback_img" src="/texture/home/btn_popup_back.png">
+				</div>
+				<div class="center_content_90">
+					<p class="center_content_p">TM ONE’s XR City is a fully immersive experience and it works best on optimised devices. Our Experience is best enjoyed on Android Pie 9, IOS 8 and above, and on laptops/desktops with Graphic memory cards running 1GB RAM or more.</p>
+				</div>
+			</div>
+			
+			<!-- Contact Area -->
+			<div id="btn_contact_popup" class="center_content_holder_contact" style="display:none;opacity:0;">
+				<div class="center_content_100">
+					<h1 class="center_content_h2">Learn more</h1>
+				</div>
+				<div class="center_content_5" id="btn_contact_back">
+					<img class="center_contentback_img" src="/texture/home/btn_popup_back.png">
+				</div>
+				<div class="center_content_contact_90">
+					<p class="center_content_p" style="margin:0;">For all enquiries, please email us using the form below.</p>
+					<form id="simple_form" name="myForm">
+						<div class="form_fill_center">
+							<div class="center_content_75" style="margin-top:5px;">
+								<div class="center_content_40" style="text-align:right;">
+									<label>Name :</label>
+								</div>
+								<div class="center_content_60">
+									<input type="text" id="user_name" name="user_name">
+								</div>
+
+								<div class="center_content_40" style="text-align:right;margin-top:5px;">
+									<label>Email / Number :</label>
+								</div>
+
+								<div class="center_content_60" style="margin-top:5px;">
+									<input type="text" id="user_email" name="user_email">
+								</div>
+							</div>
+
+							<div class="center_content_20" style="text-align:center;">
+								<div id="btn_submitcontact">
+									<img style="width:100%;height:auto" src="/texture/home/btn_submit.png">
+								</div>
+							</div>
+
+						</div>
+					</form> 
+				</div>
+			</div>
+		</li>
+	</ul>
+</div>
+<!-- Main menu End-->
+
   <div id="app" class="app-container"></div>
 </body>
-<script src="/js/build/tweenjs.js"></script>
+<!-- Menu JS -->
+<script src="/js/menu.js"></script>
+<script src="/build/konva.min.js"></script>
+<script src="/build/howler.min.js"></script>
+<script src="/build/tweenjs.js"></script>
 <script src="/js/gsap.min.js"></script>
 <script src="/js/build/lodash.min.js"></script>
 <script src="/js/utils/humanize.js"></script>
 <script src="/js/build/howler.min.js"></script>
-<script src="/js/build/kute.min.js"></script>
-<script type="module" src="/js/build/tweakpane-3.0.5.js"></script>
 <script type="module" src="./iocmain.js"></script>
 
 </html>

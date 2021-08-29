@@ -55,6 +55,7 @@
     "range-parser": "^1.2.1",
     "raw-body": "^2.4.0",
     "rollup-plugin-multi-input": "^1.3.1",
+    "rollup-plugin-root-import": "^1.0.0",
     "safe-buffer": "^5.1.2",
     "safer-buffer": "^2.1.2",
     "send": "^0.17.1",
@@ -73,7 +74,8 @@
   },
   "devependencies": {},
   "scripts": {
-    "serve": "npx rollup -c && node index.js",
+    "watch": "npx rollup -c -w",
+    "serve": "npx rollup -c && npm run static",
     "static": "node index.js",
     "test": "echo \"Error: no test speci0fied\" && exit 1"
   },
@@ -88,7 +90,10 @@
   },
   "homepage": "https://github.com/hyprstereo/TM#readme",
   "dependencies": {
+    "@scenejs/timeline": "^0.3.0",
     "fabric": "^4.5.1",
-    "rollup-plugin-svg": "^2.0.0"
+    "rollup-plugin-svg": "^2.0.0",
+    "scenejs": "^1.5.0",
+    "timeline-js": "0.0.2"
   }
 }

@@ -1,8 +1,30 @@
 import svg from 'rollup-plugin-svg'
-
+import rootImport from 'rollup-plugin-root-import';
+// export default {
+//   input: "./src/controllers/tomi/index.js",
+//   external:['/node_modules/**', '/build/**'],
+//   output: [
+//     {
+//       file: "./public/tomi.js",
+//       paths: {
+//         '/js': './js',
+//         '/build': './build'
+//       }
+//     },
+//   ],
+  
+//   plugins: [
+//     rootImport({
+//       root: `${__dirname}/public/`,
+//       useInput: `prepend`,
+//       extensions: '.js'
+//     }),
+//     svg(),
+//   ]
+// };
 export default {
   input: "./src/app.js",
-  external:['/node_modules/**', '/build/**', 'THREE'],
+  external:['/node_modules/**', '/build/**'],
   output: [
     {
       file: "./public/iocmain.js",
@@ -12,7 +34,13 @@ export default {
       }
     },
   ],
+  
   plugins: [
+    rootImport({
+      root: `${__dirname}/public/`,
+      useInput: `prepend`,
+      extensions: '.js'
+    }),
     svg(),
   ]
 };
