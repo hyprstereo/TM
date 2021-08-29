@@ -148,9 +148,10 @@ export class MediaManager extends Emitter {
         }
     }
 
-    createVideoElement(preload = true, autoplay = true, muted = true) {
+    createVideoElement(preload = true, autoplay = true, muted = true, replace = undefined) {
+        let videoEl;
         if (!this._videoEl) {
-            const videoEl = document.createElement('video');
+            videoEl = replace || document.createElement('video');
             videoEl.preload = preload;
             videoEl.autoplay = autoplay;
             videoEl.muted = muted;
@@ -162,7 +163,11 @@ export class MediaManager extends Emitter {
 
             }, false);
             //videoEl.addEventListener('canplay', this._mediaIsReady.bind(this), false);
-            videoEl.addEventListener('canplaythrough', this._mediaIsFullyReady.bind(this), false);
+            
+            
+        }
+
+        videoEl.addEventListener('canplaythrough', this._mediaIsFullyReady.bind(this), false);
             videoEl.addEventListener('ended', this._mediaEnded.bind(this), false);
             videoEl.addEventListener('play', (e)=> {
                 console.log('kooooo',Howler)
@@ -179,8 +184,7 @@ export class MediaManager extends Emitter {
                 console.log('waiting', e);
                 this.emit('waiting', e);
             }, false);
-            this._videoEl = videoEl;
-        }
+        this._videoEl = videoEl;
         return this._videoEl;
     }
 

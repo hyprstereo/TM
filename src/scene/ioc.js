@@ -7,14 +7,115 @@ import { Actioneer, Timeliner } from "../media/timeliner";
 import { createInteractiveCanvas } from "../interact/web.game";
 import { GlobalProps } from "./props";
 import { MediaManager } from "../media/media.manager";
-import { MeshBasicMaterial } from "../build/three.module";
+import { MeshBasicMaterial, MeshLambertMaterial, VideoTexture } from "../build/three.module";
 import { dom } from "../build/dat.gui.module";
+import { SceneManager } from "../controllers/view";
+import { TextureManager } from "../media/texture.manager";
 
+
+export class ScreenManager {
+    constructor(scope = undefined) {
+        this.scope = scope;
+        this.objects = {}
+        this.videos = [];
+        this.copies = {}
+    }
+
+    async addTarget(label, object, src = undefined, existingVideo = undefined) {
+        const mat = new MeshBasicMaterial({ color: 0xfefefe })
+        const panel = await setupVideoPanel(mat, src).then(v => v);
+
+        panel.loop = true;
+
+        const newId = this.videos.push(panel);
+        //this.materials.push(mat);
+        object.userData = {
+            source: newId,
+            default: newId,
+            ...object.userData
+        }
+        object.material = mat;
+        object.material.needsUpdate = true;
+        this.copies['c_' + newId] = object.clone();
+        this.copies['c_' + newId].material = mat.clone();
+        object.parent.add(this.copies['c_' + newId])
+        this.copies['c_' + newId].position.set(0, 12, 0);
+        this.objects[label] = object;
+        return { object, panel };
+    }
+
+    getTarget(label) {
+        return this.objects[label];
+    }
+
+    getVideo(label) {
+        return this.videos[label];
+    }
+
+    playFrom(id, sourceId = 0) {
+        sourceId = Math.max(sourceId, this.videos.length - 1);
+        this.objects[id].material = this.copies['c_' + sourceId].material;
+        this.objects[id].userData.source = sourceId;
+        // if (this.objects[id] && this.objects[id].material) {
+        //     if (this.objects[id].material.map.image) {
+        //         this.objects[id].material.map.image = this.videos[sourceId];
+        //         this.objects[id].userData.source = sourceId;
+        //         this.checkVideoState();
+        //     }
+        // }
+    }
+
+    resetDisplay(label) {
+        this.objects[label].material.map = this.copies['c_' + this.objects[label].userData.default].material.map.clone();
+        this.checkVideoState();
+    }
+
+    playAll() {
+        this.videos.forEach(v => {
+            console.log('video>>>', v);
+            //if(v) v.play()
+        });
+    }
+
+    stopAll() {
+        for (let k in this.objects) {
+            this.resetDisplay(k);
+        }
+        this.checkVideoState();
+    }
+
+    checkVideoState() {
+        let videos = [];
+        for (let k in this.objects) {
+            const data = this.objects[k].userData;
+            if (data.source) {
+                videos.push(data.source);
+            }
+        }
+        const ref = _.fill([], [0, this.videos.length]);
+        const keys = _.differenceBy(ref, videos);
+        console.log('videos not active', keys);
+
+    }
+}
+
+const setupVideoPanel = async (mat, src = '/video/fortinet.mp4') => {
+    const videoEl = await createVideoElement({ preload: true, autoplay: true }, src).then(v => v);
+    document.body.appendChild(videoEl);
+    const videoTexture = new THREE.VideoTexture(videoEl);
+    videoTexture.flipY = false;
+    mat.map = videoTexture;
+    videoEl.play();
+
+    return videoEl;
+}
 
 export class IOCScene extends Emitter {
     constructor(sceneMan = undefined) {
         super();
         this.sceneManager = sceneMan;
+        this.screenManager = new ScreenManager(this);
+        this.textureManager = new TextureManager(this);
         this._mainButton = [];
         this._group;
         this._container;
@@ -34,10 +135,11 @@ export class IOCScene extends Emitter {
         this._volume = 0.5;
         this._fx = {};
         this._pos = [];
-        this.cssRenderer = new CSS3DRenderer();
-        this.cssRenderer.setSize(window.innerWidth, window.innerHeight)
+        // this.cssRenderer = new CSS3DRenderer();
+        // this.cssRenderer.setSize(window.innerWidth, window.innerHeight)
         this._mediaManager = new MediaManager();
-        this._configureMediaManager();
+        // this.configureMediaManager();
+        //this._configureMediaManager();
         this._activeFX;
         this._selected;
 
@@ -52,11 +154,15 @@ export class IOCScene extends Emitter {
         this._activeTL = null;
         this._data = null;
         this._loading = false;
+        this._isSet = false;
     }
 
-    _configureMediaManager() {
+    configureMediaManager(existingVideo = undefined) {
+        // this._mediaManager = new MediaManager();
         const mediaMan = this._mediaManager;
         const self = this;
+
+
         mediaMan.on('canplay', (media, video, audio) => {
             console.log('can play', media, video, audio);
             self.emit('canplay', media, video, audio);
@@ -88,8 +194,16 @@ export class IOCScene extends Emitter {
         });
 
         mediaMan.on('play', (e) => {
-
             self.emit('play', e)
+            if (!self._isSet) {
+                // self.screenManager.objects['monitor'].material.map = self.screenManager.copies['c_0'].material.clone();
+                mediaMan._videoEl.loop = false;
+                const txt = new VideoTexture(mediaMan._videoEl)
+                txt.flipY = false;
+                self.screenManager.objects['monitor'].material.map = txt;
+                self.screenManager.objects['led1'].material.map = txt;
+                self._isSet = true;
+            }
         })
 
         mediaMan.on('ended', (e) => {
@@ -99,17 +213,18 @@ export class IOCScene extends Emitter {
         })
 
         const video = mediaMan.createVideoElement();
+
         video.style.display = 'none';
         const audio = mediaMan.createAudioElement();
         audio.style.display = 'none';
         if (video) {
             document.body.appendChild(video);
-
         }
 
         if (audio) {
             document.body.appendChild(audio);
         }
+
     }
 
     get media() {
@@ -178,20 +293,23 @@ export class IOCScene extends Emitter {
 
     nextVideo(index = -1, showOnMain = false) {
 
-      
 
+        const self = this;
         if (!this.endOfList()) {
-            this._videoEl = this._screenVideo.image;
+            //this._videoEl = this.screenManager.image;
 
-            if (index>-1) this._activeIndex = index;
-            if (index<0) this._activeIndex++;
+            if (index > -1) this._activeIndex = index;
+            if (index < 0) this._activeIndex++;
             const mm = this._mediaManager;
             const item = this.currentItem();
             this._selected = item;
             console.log(item);
-          
+
             mm.play(item.data.src, item.data.audio);
-           
+            
+
+            //sthis.screenManager.playFrom('monitor', 4);
+
         }
 
         return this;
@@ -203,14 +321,8 @@ export class IOCScene extends Emitter {
     }
 
     mainLED(src = undefined) {
-        if (src) {
-            if (src !== this._leds[1].material.map) {
-                this._oriSrc = this._leds[1].material.map;
-                this._leds[1].material.map = src;
-            }
-        } else {
-            this._leds[1].material.map = this._oriSrc;
-        }
+        const sm = this.screenManager;
+
         return this;
     }
 
@@ -236,42 +348,30 @@ export class IOCScene extends Emitter {
     }
 
     resetVideo() {
-
         this._mediaManager.pause();
+        if (this._isSet) {
+            this._isSet = false;
+            //this.screenManager.resetDisplay(k);
+            this.screenManager.resetDisplay('led1');
+            this.screenManager.resetDisplay('monitor');
+        }
     }
-    
+
 
     async selectedMonitor(target) {
-        
-        const scss = document.createElement('div')
-        scss.style.display="block";
-        scss.style.width="1280px"
-        scss.height ="720px";
-        scss.style.background='#fff';
-        scss.style.color='#ffffff';
-        scss.style.background='#000';
-        scss.innerText="gabzilla";
-        
-        // this.scene.add(cssObj);
-        const cssObj = new CSS3DObject(scss);
 
-        const screenDom = document.createElement('div');
-        screenDom.display = 'block';
-        screenDom.width='1280px';
+
         // const {stage, onRendor} = createInteractiveCanvas(document.body);
         const planegeo = new THREE.PlaneGeometry()
-        const planeMat = new MeshBasicMaterial({color:0xff00000});
+        const planeMat = new MeshBasicMaterial({ color: 0xff00000 });
 
         this._monitor = target;
         console.log(this._monitor)
-        this._defaultTexture = target.material.map;
+        //this._defaultTexture = target.material.map;
+
         target.material.reflectivity = 0;
         const box = new THREE.Box3().setFromObject(this._monitor);
-        //const canvasT = await stage.toCanvas({callback:(c)=>c})
-        //const rt = new THREE.CanvasTexture(canvasT);
-        //target.material.map = rt;
-        // target.position.x = 0;
-        console.log(target)
+
 
         const size = box.getSize(target.position.clone())
         const hudgeo = new THREE.PlaneGeometry(size.x * 1.4, size.y * 1.4, 4, 4);
@@ -279,31 +379,28 @@ export class IOCScene extends Emitter {
         this._hud = new THREE.Mesh(hudgeo, hudMat);
 
         target.position.x += 0.0791;
-        target.add(new CSS3DObjectme
-            )
+
         this._hud.position.copy(target.position);
         this._hud.position.x -= 0.002;
         this._hud.position.y += (size.y * 0.65);
         this._hud.position.z += 0.128;
         target.scale.x *= -1;
         //this._hud.position.z += (size.z * 0.5) + .081
-        
+        this.__selectedMonitor = target;
         target.parent.add(this._hud);
-        target.parent.add(cssObj)
-        document.body.appendChildcss
-
         //this._monitor = target;
     }
 
     async screenMonitorVideo(videoSrc, deco = false) {
-        const self = this;
-        return await new Promise((res, rej) => {
-            if (!this._screenVideo) {
-                this._screenVideo = new THREE.VideoTexture(this._mediaManager._videoEl);
-                this._screenVideo.flipY = false;
-                res(this._screenVideo)
-            }
-        })
+        // const self = this;
+        // return await new Promise((res, rej) => {
+        //     if (!this._screenVideo) {
+        //         this._screenVideo = new THREE.VideoTexture(this._mediaManager._videoEl);
+        //         this._screenVideo.flipY = false;
+        //         res(this._screenVideo)
+        //     }
+        // })
+        return
 
     }
 
@@ -397,14 +494,11 @@ export class IOCScene extends Emitter {
         react.state = 0;
         react.maxScale = proact.maxScale = 0.22;
         react.position.x -= 4
-            // create screen css here
+        // create screen css here
 
-            const cssScreenObj = new CSS3DObject(dom)
-            // end here
-        
-DocumentType.body.appendChild(
+        // const cssScreenObj = new CSS3DObject(dom)
+        // end here
 
-)
         proact.position.x = btns[0].position.x;
         this._group.add(btns[2]);
         // this._group.position.set(this._monitor.position.clone());

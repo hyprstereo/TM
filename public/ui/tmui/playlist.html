@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<link rel="icon" href="/favicon.ico" />
+	<link type="text/css" rel="stylesheet" href="/css/main.css">
+	<link type="text/css" rel="stylesheet" href="/css/tmui/tmui.css">
+	<link type="text/css" rel="stylesheet" href="/css/w3.css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<style>
+		body,
+		html {
+			background: #fff;
+			width: 100%;
+			height: 100vh;
+			padding: 0;
+			margin: 0;
+		}
+	</style>
+	<title>UI Tray Base</title>
+	<script src="/js/tmui/tmui.js"></script>
+	<script>
+		function loadTrayUI() {
+			var data = {
+				ioc: {
+					label: 'IOC',
+					items: [
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						}
+					]
+				},
+				cyber: {
+					label: 'Cybersecurity',
+					items: [
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						}
+					]
+				},
+				io3c: {
+					label: 'IOC',
+					items: [
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						},
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						}
+					]
+				},
+				cyber2: {
+					label: 'Cybersecurity',
+					items: [
+						{
+							label: 'playlist1',
+							data: 'ioc0'
+						}
+					]
+				}
+			}
+			var trayUI = TrayUI.init(document.body);
+			trayUI.header.innerHTML = `
+			<div style="display:inline-flex;width: 100%;"><a style="margin-right:2rem;position:relative;" href="#"><i class="material-icons">west</i></a>
+			<span>TM IOC / Cybersecurity</span>
+			</div>
+			`
+			trayUI.show();
+			//trayUI.title("TM EXR TRAY UI");
+
+
+			var playlist = trayUI.createPlaylist(data);
+
+			playlist.on('itemselect', function (item) {
+				console.log(item.label, item.data);
+			});
+
+			playlist.refresh();
+
+			var controller = playlist.createController();
+			controller.on('click', function (id) {
+				switch (id) {
+					case 'list':
+						trayUI.toggleCompact();
+						break;
+				}
+				console.log(id);
+			})
+
+			var demo = function () {
+				setTimeout(function () {
+					trayUI.setMode('panel');
+					setTimeout(function () {
+						trayUI.setMode('compact');
+						setTimeout(function () {
+							trayUI.setMode('panel');
+							setTimeout(function () {
+								trayUI.setMode('content');
+								demo();
+							}, 2000);
+						}, 2000);
+					}, 2000);
+
+				}, 2000);
+			};
+
+			demo();
+		}
+	</script>
+</head>
+
+<body onload="loadTrayUI()">
+
+</body>
+
+
+</html>

@@ -186,7 +186,7 @@ class SceneManagerImpl extends Emitter {
     }
     if (this.enableCss) {
 
-      this.cssRenderer.render(sthis.cene, this.camera)
+      this.cssRenderer.render(this.scene, this.camera)
 
     }
 

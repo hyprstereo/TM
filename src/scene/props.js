@@ -73,7 +73,7 @@ export const LoadAssets = async (
                 //ßscene.add(model);
                 if (name.startsWith("table")) {
                   if (setupScreens(model, scene)) {
-                    
+
                   }
                   //fixMaterials(model);
                 } else if (name.startsWith("tomi")) {
@@ -210,15 +210,15 @@ export const setupScreens = (tablesSet, scene = undefined) => {
   const screen2 = screen.clone();
 
   const mon = screen.clone();
-  
-  SceneManager.ioc.screenMonitorVideo('/video/ioc/Ioc_01_journey.mp4')
-    .then( monitorTexture => {
-      
-      mon.map = monitorTexture;
-      mon.side = THREE.DoubleSide;
-  })
-  .catch(err => console.error(err));
-  
+
+  // SceneManager.ioc.screenMonitorVideo('/video/ioc/Ioc_01_journey.mp4')
+  //   .then( monitorTexture => {
+
+  //     mon.map = monitorTexture;
+  //     mon.side = THREE.DoubleSide;
+  // })
+  // .catch(err => console.error(err));
+
 
   const lt = new THREE.TextureLoader();
   lt.load("../../ui/ioc/screen/a15.png", (t) => {
@@ -241,7 +241,7 @@ export const setupScreens = (tablesSet, scene = undefined) => {
       if (node.type === "Mesh") {
         node.layers.set(6);
         if (node.name.startsWith('Scene0')) {
-          node.userData =  node.userData = { ...data, id: node.name, child: node.children };
+          node.userData = node.userData = { ...data, id: node.name, child: node.children };
         }
         if (node.name.startsWith("dus")) {
           node.material.side = THREE.DoubleSide;
@@ -250,16 +250,17 @@ export const setupScreens = (tablesSet, scene = undefined) => {
           node.layers.set(6);
         } else if (node.material.name.startsWith("screen_monitor")) {
           reflects.push(node);
-         
-          if (node.name  ==='Mesh011_2012') {
-            GlobalProps.Monitor = node;
-            SceneManager.ioc.selectedMonitor(node);
-            selected = true;
-            node.material = mon;
-           
-            node.material.side = THREE.DoubleSide;
+
+          if (node.name === 'Mesh011_2012') {
+            if (!GlobalProps.Monitor) {
+              GlobalProps.Monitor = node;
+              SceneManager.ioc.selectedMonitor(node);             
+              selected = true;
+            }
           } else {
             node.material = counter % 2 == 0 ? screen : screen2;
+            //SceneManager.ioc.screenManager.objects['monitor_' + counter];
+            //SceneManager.ioc.screenManager.addTarget('monitor-'+ counter, node);
           }
         } else if (node.name.startsWith("keyboard")) {
           if (!keyboard.map) {
@@ -270,18 +271,20 @@ export const setupScreens = (tablesSet, scene = undefined) => {
         } else if (node.name.startsWith("table_geo")) {
           reflects.push(node);
           if (node.name == 'table_geo_000001012') {
-           // node.layers.set(SpriteLayer);
+            // node.layers.set(SpriteLayer);
           }
         }
-        
+
         node.castShadow = node.receiveShadow = true;
-      } else if (node.type === 'Material'){
+      } else if (node.type === 'Material') {
         //node.map.needsUpdate = true;
       }
       //node.map.needsUpdate = true;
 
       counter++;
     });
+    //tablesSet.matrixAutoUpdate = false;
+
   });
   return selected
 };
@@ -383,24 +386,24 @@ const fixMaterials = (asset, shadow = false) => {
 };
 
 export async function loadTextures(...src) {
-  return await new Promise((res,rej) =>{
+  return await new Promise((res, rej) => {
     const textures = [];
     const loader = new THREE.TextureLoader()
     let i = 0;
-    while(i < src.length) {
+    while (i < src.length) {
       const s = src[i];
-      loader.load(s, (txt) =>{
+      loader.load(s, (txt) => {
         textures.push(txt);
-       if (textures.length == src.length) {
-         res(textures);
-         //break
-       }
-       i++;
+        if (textures.length == src.length) {
+          res(textures);
+          //break
+        }
+        i++;
       });
-     // i++;
+      // i++;
     }
   })
-  
+
 }
 
 export function extracts(model, mesh = true, mats = true) {
@@ -409,7 +412,7 @@ export function extracts(model, mesh = true, mats = true) {
   model.traverse((node) => {
     if (mesh && node.type == 'Mesh') {
       meshes.push(node);
-    } else if(node.type == 'Material') {
+    } else if (node.type == 'Material') {
       console.log('mat', node.name, node.map);
       materials.push(node);
     }
@@ -484,7 +487,7 @@ void main() {
 }
 `;
 
-const applyBloom = (target) => {};
+const applyBloom = (target) => { };
 
 export const ExportToGLTF = async (name, ...obj) => {
   return await new Promise((res, rej) => {

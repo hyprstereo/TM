@@ -87,7 +87,7 @@ export const Facial = (w = 512, h = 512) => {
             //         Face._lastTime = ms;
             //     }
             // } else {
-                Face.mouth.path.setAttribute('d', getLipPath(Face._lipId))
+            Face.mouth.path.setAttribute('d', getLipPath(Face._lipId))
             //}
 
             const svgData = (new XMLSerializer()).serializeToString(svg)
@@ -99,6 +99,8 @@ export const Facial = (w = 512, h = 512) => {
                 let sx = (ctx.canvas.width - sw) / 2;
                 let sy = (ctx.canvas.height - sh) / 2;
                 ctx.drawImage(img, sx, sy * 1.8, sw, sh);
+                //const imgData = ctx.getImageData(0, 0, ctx.width, ctx.height);
+                //texture.image = imgData;
                 Cached[animId] = img;
                 texture.needsUpdate = true;
             }
@@ -112,6 +114,8 @@ export const Facial = (w = 512, h = 512) => {
                     rendering = false;
                 }
             }
+
+
             Face.needsUpdate = false;
         }
     }
@@ -211,7 +215,7 @@ export const Facial = (w = 512, h = 512) => {
 }
 
 export const setupFacial = (tomi) => {
-    const {svg, Face, faceTexture} = Facial(512, 512);
+    const { svg, Face, faceTexture } = Facial(512, 512);
     tomi.face = Face;
     tomi._face.material = faceTexture;
     //tomi.facial = TomiFace;

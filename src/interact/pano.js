@@ -13,9 +13,10 @@ export const createVideoElement = async (config = { preload: true, autoplay: tru
 
     videoSrc.forEach((src) => {
       const source = document.createElement("source");
-      source.src = src;
+      source.src = src;  
       video.appendChild(source);
     });
+    
     video.style.display = "none";
     //video.crossOrigin = "anonymous";
 

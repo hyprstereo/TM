@@ -1,0 +1,355 @@
+{
+  "icon": [
+    {
+      "draggable": false,
+      "name": "actor-id:TEMPBoxso",
+      "iconType": "unit",
+      "x": 10,
+      "y": 50,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": false,
+      "name": "actor-id:Asamlkan",
+      "iconType": "unit",
+      "x": 110,
+      "y": -30,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": false,
+      "name": "actor-id: TempoyaklkanPatia",
+      "iconType": "unit",
+      "x": 220,
+      "y": -30,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": false,
+      "name": "actor-id:NasiCampur...",
+      "iconType": "unit",
+      "x": 340,
+      "y": -10,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": false,
+      "name": "actor-id:KopiO",
+      "iconType": "unit",
+      "x": 50,
+      "y": 150,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": false,
+      "name": "actor-id:CancaruSambalPortal",
+      "iconType": "unit",
+      "x": 120,
+      "y": 200,
+      "parent": "Intrusion Set: Leviathan"
+    },
+    {
+      "draggable": true,
+      "name": "Intrusion Set: Leviathan",
+      "iconType": "virus",
+      "x": 250,
+      "y": 100,
+      "parent": "Malaysian Government"
+    },
+
+    {
+      "draggable": false,
+      "name": "country: Malaysia",
+      "iconType": "unit",
+      "x": 890,
+      "y": 300,
+      "parent": "AttackPattern: JUGALIND"
+    },
+
+    {
+      "draggable": true,
+      "name": "country-code:MY",
+      "iconType": "greenUnit",
+      "x": 250,
+      "y": 275,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "Industry Government N...",
+      "iconType": "greenUnit",
+      "x": 780,
+      "y": 50,
+      "parent": "Malaysian Government"
+    },
+
+    {
+      "draggable": false,
+      "name": "AttackPattern:Macro...",
+      "iconType": "aggresive",
+      "x": 50,
+      "y": 350,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "Malware Vibriant:DANtheMan...",
+      "iconType": "aggresive",
+      "x": 120,
+      "y": 550,
+      "parent": "AttackPattern:Macro..."
+    },
+    {
+      "draggable": false,
+      "name": "Malware:DADMad",
+      "iconType": "aggresive",
+      "x": 70,
+      "y": 480,
+      "parent": "Malware Vibriant:DANtheMan..."
+    },
+    {
+      "draggable": false,
+      "name": "Technique/T1000:Unity...",
+      "iconType": "aggresive",
+      "x": 200,
+      "y": 500,
+      "parent": "AttackPattern:Macro..."
+    },
+    {
+      "draggable": false,
+      "name": "Technique/T1000:Terra...",
+      "iconType": "aggresive",
+      "x": 230,
+      "y": 600,
+      "parent": "Malware Vibriant:DANtheMan..."
+    },
+    {
+      "draggable": false,
+      "name": "Targeted Victim: John...",
+      "iconType": "aggresive",
+      "x": 480,
+      "y": 200,
+      "parent": ""
+    },
+    {
+      "draggable": false,
+      "name": "AttackPattern: Use...",
+      "iconType": "aggresive",
+      "x": 590,
+      "y": 420,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "AttackPattern: Janus3D...",
+      "iconType": "aggresive",
+      "x": 680,
+      "y": 580,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "Targeted Victim: Bran...",
+      "iconType": "aggresive",
+      "x": 800,
+      "y": 380,
+      "parent": "Leverage Silver Bax"
+    },
+    {
+      "draggable": false,
+      "name": "Targeted Victim: Entro...",
+      "iconType": "aggresive",
+      "x": 890,
+      "y": 25,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "Targeted Victim: Karmoni",
+      "iconType": "aggresive",
+      "x": 1100,
+      "y": 0,
+      "parent": ""
+    },
+    {
+      "draggable": true,
+      "name": "AttackPattern: JUGALIND",
+      "iconType": "aggresive",
+      "x": 1150,
+      "y": 400,
+      "parent": "Leverage Silver Bax"
+    },
+
+    {
+      "draggable": false,
+      "name": "duas87huidusah1d",
+      "iconType": "data",
+      "x": 1100,
+      "y": 70,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "sd5sJAChjdah91h9h764gdh",
+      "iconType": "data",
+      "x": 920,
+      "y": 200,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "S7YURIhjdsa991hubedi09",
+      "iconType": "data",
+      "x": 1200,
+      "y": 170,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "a9JANjshad981dhw9uh",
+      "iconType": "data",
+      "x": 1300,
+      "y": 190,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "4ucskdj1w89haus1hd8hhjh",
+      "iconType": "data",
+      "x": 1320,
+      "y": 290,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "4ejugal1022us9i9hd",
+      "iconType": "data",
+      "x": 1330,
+      "y": 390,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "IPKKodakj189s8hhw91d9h",
+      "iconType": "data",
+      "x": 1340,
+      "y": 470,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "D7Ramaijdoqdi010983r974h",
+      "iconType": "data",
+      "x": 1250,
+      "y": 520,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "GPWhjdsaiuhudsai912hd91",
+      "iconType": "data",
+      "x": 1170,
+      "y": 550,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "ie22jdaskj981hdu91d1dh",
+      "iconType": "data",
+      "x": 1100,
+      "y": 520,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "3SRAjdksajkdashlad8712das",
+      "iconType": "data",
+      "x": 1000,
+      "y": 470,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "malini2341dsabfasj1213",
+      "iconType": "data",
+      "x": 950,
+      "y": 400,
+      "parent": "AttackPattern: JUGALIND"
+    },
+    {
+      "draggable": false,
+      "name": "d73jdsaj01jid91jdi21",
+      "iconType": "data",
+      "x": 1050,
+      "y": 300,
+      "parent": "AttackPattern: JUGALIND"
+    },
+
+    {
+      "draggable": false,
+      "name": "Leverage Silver Bax",
+      "iconType": "template",
+      "x": 480,
+      "y": 325,
+      "parent": ""
+    },
+    {
+      "draggable": true,
+      "name": "Malaysian Government",
+      "iconType": "template",
+      "x": 590,
+      "y": 275,
+      "parent": ""
+    },
+    {
+      "draggable": false,
+      "name": "APIjkdias",
+      "iconType": "template",
+      "x": 700,
+      "y": 420,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": true,
+      "name": "Ransomware MatSalleh",
+      "iconType": "template",
+      "x": 550,
+      "y": 500,
+      "parent": "Malaysian Government"
+    },
+    {
+      "draggable": false,
+      "name": "CelticViking targers ISPs",
+      "iconType": "template",
+      "x": 950,
+      "y": 100,
+      "parent": "AttackPattern: JUGALIND"
+    },
+
+    {
+      "draggable": false,
+      "name": "External reference to...",
+      "iconType": "external",
+      "x": 350,
+      "y": 400,
+      "parent": "AttackPattern:Macro..."
+    },
+    {
+      "draggable": false,
+      "name": "External reference to...",
+      "iconType": "external",
+      "x": 530,
+      "y": 100,
+      "parent": "Malaysian Government"
+    },
+
+    {
+      "draggable": false,
+      "name": "Data Breach The Wombels",
+      "iconType": "breach",
+      "x": 960,
+      "y": -30,
+      "parent": "Targeted Victim: Karmoni"
+    }
+  ]
+}

@@ -1,0 +1,438 @@
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    -ms-content-zooming: none;
+    
+    margin:0px;
+    padding:0px;
+    box-sizing:border-box;
+    font-family:sans-serif;
+  }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    /* overflow: hidden; */
+  }
+  
+  #pano {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+  }
+
+   /* ======================= TMlogo */
+  .tmlogo{
+    position: fixed;
+    width: 12%;
+    top: 0;
+    left: 0;
+    z-index: 12;
+    max-width: 260px;
+    min-width: 110px;
+    cursor: hand;
+  }
+
+  /* ======================= sliderbar */
+
+  #sidebar {
+    position:fixed;
+    top:0px;
+    left:0px;
+    width:300px;
+    height:100%;
+    background:linear-gradient(rgb(145, 119, 109), rgb(137,150,191));
+    opacity: 0.9;
+    transition:all 300ms linear;
+    z-index: 8;
+    /* overflow: hidden;  */
+  }
+  #sidebar.active {
+    left:-260px;
+  }
+  #sidebar.active .toggle-btn {
+    background-image: url('../assets/imgs/arrow_2.png');
+  }
+
+  #sidebar .toggle-btn {
+    position:absolute;
+    
+    width: 80px;
+    height: 80px;
+    background-image: url('../assets/imgs/arrow_1.png');
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 2;
+    left:250px;
+    top:45%;
+  }
+  #sidebar .toggle-btn span {
+    display:block;
+    width:30px;
+    height:5px;
+    margin:5px 0px;
+    cursor:pointer;
+  } 
+  #sidebar div.list div.item {
+    padding:2.4vh 20px;
+    color:#fcfcfc;
+    text-transform:uppercase;
+    font-size:13px;
+    font-weight: bold;
+    text-align: left;
+     /* text-align: justify; */
+    text-justify: inter-word;
+  }
+
+  .list{
+    padding-top: 30%;
+    margin-left: 5%;
+    cursor: hand;
+  }
+
+  /* @media screen and (max-device-width: 800px) {
+    #sidebar div.list div.item {
+      font-size:12px;
+    }
+  }
+  @media screen and (min-device-width: 800px) {
+    #sidebar div.list div.item {
+      font-size:14px;
+    }
+  } */
+
+  /* ======================= FloorPlan-1 */
+  
+  .free.dragscroll {
+    /* float: right; */
+    /* float: left; */
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    background-size: cover;
+    
+    /* cursor: grab; */
+}
+
+  #floorplan1{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+  }
+
+  .map {
+    margin:0px;
+    position: relative;
+    display: inline-block;
+  
+  }
+  .box {
+    width:4%;
+    /* height:8%; */
+    /* background-image:   url(assets/imgs/pin/icon-1.png); */
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    position: absolute;
+    cursor: hand;
+  }
+  
+
+
+  #pin-1 {
+    /* top:45%;
+    left:52%; */
+    top: 54.5%;
+    left: 42.1%;
+  }
+  #pin-2 {
+    /* top: 29.5%;
+    left: 58.1%; */
+    top:45%;
+    left:52%;
+  }
+  #pin-3 {
+    top: 28.5%;
+    left: 59.1%;
+  }
+  #pin-4 {
+    top: 23.5%;
+    left: 39.1%;
+  }
+  #pin-5 {
+    top: 62.5%;
+    left: 67.1%;
+  }
+  #pin-6 {
+    top: 30.5%;
+    left: 35.1%;
+  }
+  #pin-7 {
+    top: 55.5%;
+    left: 72.1%;
+  }
+  #pin-8 {
+    top: 34.5%;
+    left: 64.1%;
+  }
+  #pin-9 {
+    top: 40.5%;
+    left: 67.1%;
+  }
+  #pin-10 {
+    top: 68.5%;
+    left: 64.1%;
+  }
+
+  #pin-11 {
+    top: 13%;
+    left: 62%;
+    
+  }
+  #pin-12 {
+    top: 25.5%;
+    left: 36.1%;
+  }
+  #pin-13 {
+    top: 27.5%;
+    left: 65.1%;
+  }
+  #pin-14 {
+    top: 19.5%;
+    left: 53.1%;
+  }
+  #pin-15 {
+    top: 20.5%;
+    left: 59.1%;
+  }
+  #pin-16 {
+    top: 25.5%;
+    left: 44.1%;
+  }
+  #pin-17 {
+    top: 14.5%;
+    left: 39.1%;
+  }
+  #pin-18 {
+    top: 63.5%;
+    left: 66.1%;
+  }
+  #pin-19 {
+    top: 33.5%;
+    left: 48.1%;
+  }
+  #pin-20 {
+    top: 34.5%;
+    left: 39.1%;
+  }
+  #pin-21 {
+    top: 43.5%;
+    left: 63.1%;
+  }
+
+  .floorButtons{
+    position: fixed;
+    bottom: 2%;
+    left: 10%;
+    width: 80%;
+    text-align: center;
+    z-index: 6;
+  }
+  .btn{
+    margin: 0;
+    width: 30%; 
+    height: auto;
+    max-width: 150px;
+    cursor: hand;
+  }
+
+  @media screen and (max-device-width: 800px) {
+    #floorplan1{
+      width: auto;
+    }
+    #sidebar div.list div.item {
+      padding:2vh 20px;
+    }
+  }
+  @media screen and (min-device-width: 800px) {
+    #floorplan1{
+      width: 100%;
+    }
+
+    #sidebar div.list div.item {
+      padding:2.4vh 20px;
+    }
+  }
+
+  /* ======================= sideButtons */
+  .sidePanelBtns{
+    position: fixed; 
+    width: 8%;
+    height: 100%;
+    right: 1%;
+    z-index: 9;
+  }
+  .sidebtn{
+    width: 60%;
+    min-width: 60px;
+    float: right;
+    cursor: hand;
+  }
+
+
+
+  /* ======================= Iframe-2 */
+  .previewFrame{
+    position: fixed;
+    width: 70%;
+    height: 80%;
+    top: 10%;
+    left: 15%;
+    bottom: 10%;
+    right: 15%;
+    z-index: 10;
+  }
+  .previewfr{
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 1%;
+  }
+  .previewtitle{
+    position: absolute;
+    top: 2%;
+    left: 2%;
+    color: white;
+    font-size: 2.5vh;
+  }
+  .previewClose{
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8%;
+    min-width: 40px;
+  }
+  .previewDescription{
+    position: absolute;
+    top: 25%;
+    right: 0px;
+    width: 40%;
+    height: 60%;
+    min-width: 200px;
+  }
+  .previewDescriptionBox{
+    right: 0px;
+    width: 100%;
+    height: 100%;
+    min-width: 200px;
+  }
+  .previewLaunchDiv{
+    right: 0px;
+    bottom: 0px;
+    width: 80%;
+    min-width: 180px;
+    position: absolute;
+  }
+  .previewLaunchBtn{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin-right: -20px;
+    width: 100%;
+    max-width: 150px;
+    min-width: 150px;
+  }
+  .previewSubtitle{
+    position: absolute;
+    text-align: center;
+    bottom: 20px;
+    left: -80px;
+    width: 100%;
+    color: white;
+    font-size: calc(6px + 0.7vw);
+  }
+
+  .previewTitleHolder{
+    position: absolute;
+    top: 0;
+    right: 60%;
+    /* width: 0%; */
+    z-index: 10;
+    text-align: center;
+  }
+  .previewMainTitle{
+    top: 0;
+    background-image: url(../assets/iframes/cm_text_bg.png);
+    background-repeat: no-repeat;
+    background-size: contain; 
+    color: white;
+    width: 20vw;
+    height: 10vh;
+    position: absolute;
+    font-size: 1.0em; 
+    text-align: center; 
+    padding-top: 1vh;
+    min-width: 120px;
+    min-height: 120px;
+    max-width: 220px;
+    max-height: 220px;
+  }
+
+  .descriptionText{
+    position: absolute;
+    top: 4%;  
+    left: 5%;
+    font-size: calc(6px + 1vh);
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+    text-align: justify;
+    padding-right: 5%;
+  }
+ 
+  @media screen and (max-device-width: 1100px) {
+    .descriptionText{
+      font-size: 0.5em; 
+    }
+    .previewMainTitle{
+      font-size: 0.6em; 
+    }
+  }
+  @media screen and (min-device-width: 1100px) {
+    .descriptionText{
+      font-size: 0.7em; 
+    }
+    .previewMainTitle{
+      font-size: 0.9em; 
+    }
+  }
+
+  .launchfr{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: none;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0; 
+    z-index: 5;
+  }
+
+  /* ======================= FloorPlan-3 */

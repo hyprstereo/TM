@@ -11,7 +11,7 @@
  */
 
 import { SceneManager } from "./controllers/view.js";
-import { setupScreens } from "./scene/props.js";
+import { GlobalProps, setupScreens } from "./scene/props.js";
 import { TOMIController } from "./controllers/tomi/tomi.controller.js";
 import { HTMLFrame, HTMLLayer, IOCScene } from "./scene/ioc.js";
 import * as THREE from '/build/three.module.js'
@@ -60,7 +60,9 @@ export const SceneConfig = {
     ]
   }
 }
-const iocScene = new IOCScene();
+const iocScene = new IOCScene(SceneManager);
+iocScene.configureMediaManager();
+SceneManager.ioc = iocScene;
 const animax = new AnimaxTimeline();
 
 let pointer, indicator;
@@ -95,7 +97,6 @@ const init = async () => {
   const outline = build.composer.outline;
   indicator = Indicator();
   build.scene.add(indicator);
-  SceneManager.ioc = iocScene;
 
   let id = 0;
 
@@ -122,19 +123,21 @@ const init = async () => {
 
       SceneManager.tomi.loadTracks(e, SceneConfig.Assets.Models[id]);
     } else {
+      let videoSource = ['/video/map.mp4', '/video/fortinet.mp4', '/video/deco.mp4'];
       model.traverse(node => {
+
         if (node.type === 'Mesh') {
           if (node.name.startsWith('building003')) {
             node.visible = false;
           } else if (node.name.startsWith('led')) {
-            node.material = ledSide.clone();
-            if (node.name === 'led1') {
-              setupVideoPanel(node.material)
-              node.layers.set(6);
-            }
-
+            node.layers.set(6);
+            
+            iocScene.screenManager.addTarget(node.name, node, videoSource.shift(), true).then((a)=>{
+              console.log(a)
+            });
+            //TODO: remove _leds
             iocScene._leds.push(node);
-            ledMats.push(node);
+            //ledMats.push(node);
           }
           node.castShadow = false;
           node.receiveShadow = false;
@@ -142,7 +145,7 @@ const init = async () => {
       });
       SceneManager.scene.add(model);
     }
-
+   
     id++;
     console.log("complete", model);
 
@@ -170,11 +173,9 @@ const init = async () => {
   })
 
   SceneManager.on("loadfinished", async () => {
-    gui = await createSpiderGame('./icons.json');
-    console.log(gui);
-
-    // iocScene._leds[0].material.map = gui.stage;
-    // iocScene._leds[0].material.map.needsUpdate = true;
+    SceneManager.ioc.screenManager.addTarget('monitor', GlobalProps.Monitor, '/video/pano.mp4');
+    GlobalProps.Monitor.material.needsUpdate = true;
+    //iocScene.screenManager.playFrom('monitor', 3);
 
     window.addEventListener('resize', SceneManager._onResize.bind(SceneManager), false)
     iocScene.createFX(SceneManager.scene, SceneConfig);
@@ -278,12 +279,14 @@ const init = async () => {
       iocScene.Button(3).hide();
       iocScene.Button(4).hide();
     });
-    animax.on('seek', (time) => {
-      console.log(time, SceneManager.tomi.soundDuration().timeDisplay);
-    });
+    iocScene.on('play', function(e) {
+      if (!SceneManager.tomi.analyser) SceneManager.tomi.setupAnalyzer(e.target);
+      SceneManager.tomi.selfAware(true);
+    })
 
     let lastFX = 'alarm';
-    iocScene.on('onmediastart', (video, audio, set, index, tomiConf) => {
+    iocScene.on('onmediastart', (video, audio, set, index, data) => {
+      const tomiConf = data.tomi || {visible: true};
       if (tomiConf) {
         if (!tomiConf.specials) {
 
@@ -311,14 +314,6 @@ const init = async () => {
         }
       }
 
-
-
-
-      // } else {
-      //   SceneManager.controls.lookAt(SceneManager.tomi.position.clone(), true);
-      // }
-
-      if (animax) animax.useMedia(video, SceneManager.tomi._sound, video.duration);
 
       if (set === 'cyber') {
         if (lastFX != '') iocScene.FX(lastFX).deactivate();
@@ -465,6 +460,7 @@ const init = async () => {
     SceneManager.controls.screenSpacePanning = true;
     SceneManager.camera.position.set(0, SceneConfig.terminalPosition.y + .01, -3)
     SceneManager.camera.layers.toggle(7);
+    iocScene.screenManager.playAll();
   });
 
   SceneManager

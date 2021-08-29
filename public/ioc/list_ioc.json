@@ -1,0 +1,359 @@
+{
+  "scene": {
+    "camera" : {
+
+    },
+    "tomi": {
+
+    }
+  },
+  "ioc": {
+    "label": "IOC",
+    "items": [
+      {
+        "label": "Virtual Integrated Operations Centre - Welcome",
+        "data": {
+          "src": "/video/n_ioc/Ioc_01_journey_1.mp4",
+          "index": 0,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 1,
+              "z": 1.3
+            }
+          }
+        }
+      },
+      {
+        "label": "General Benefits",
+        "data": {
+          "src": "/video/n_ioc/Ioc_02_intro_1.mp4",
+          "index": 1,
+          "position": {
+            "x": 0,
+            "y": 0.80,
+            "z": -0.3
+          }
+        }
+      },
+      {
+        "label": "Introduction",
+        "data": {
+          "src": "/video/n_ioc/Ioc_A_1.mp4",
+          "index": 2,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 0.1
+            }
+          }
+        }
+      },
+      {
+        "label": "Smart Security & Surveillance (Proactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_B_1.mp4",
+          "index": 3,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": -0.1
+            }
+          }
+        }
+      },
+      {
+        "label": "Smart Security & Surveillance (Reactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_C_1.mp4",
+          "index": 4,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": -0.1
+            }
+          }
+        }
+      },
+      {
+        "label": "Smart Traffic Lights (Proactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_D_1.mp4",
+          "index": 5,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "Smart Traffic Lights (Reactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_E_1.mp4",
+          "index": 6,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "Smart Building (Proactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_F_1.mp4",
+          "index": 7,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "SMART Services - Smart Building (Reactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_F2_1.mp4",
+          "index": 8,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "WAN - Connectivity (Proactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_G_1.mp4",
+          "index": 9,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "WAN - ICT(Proactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_H_1.mp4",
+          "index": 10,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "WAN - Product (Reactive)",
+        "data": {
+          "src": "/video/n_ioc/Ioc_I_1.mp4",
+          "index": 11,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  "cyber": {
+    "label": "Cyber Security",
+    "items": [
+      {
+        "label": "CYDEC - Take control",
+        "data": {
+          "src": "/video/n_cyber/Cyber_Intro-1.m4v",
+          
+          "interactive": "alarm",
+          "index": 0,
+          "tomi": {
+            "visible": false
+            
+          }
+        }
+      },
+      {
+        "label": "Introduction",
+        "data": {
+          "src": "/video/n_cyber/Analyst-1.m4v",
+          "audio": "/video/cyber/audio/C01.mp3",
+          "interactive": null,
+          "index": 1,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": -1,
+              "y": -0.2,
+              "z": -0.8
+            }
+          }
+        }
+      },
+      {
+        "label": " Threat Landscape",
+        "data": {
+          "src": "/video/cyber/mini/1.mp4",
+          "audio": "/video/cyber/audio/C04.mp3",
+          "interactive": null,
+          "index": 2
+        }
+      },
+      {
+        "label": "Identify the Threat",
+        "data": {
+          "src": "/video/cyber/mini/2.mp4",
+          "audio": "/video/cyber/audio/C05.mp3",
+          "interactive": null,
+          "index": 3
+        }
+      },
+      {
+        "label": "Stop the spread",
+        "data": {
+          "src": "@canvas/spider",
+          "audio": "/video/cyber/audio/C06.mp3",
+          "interactive": "spider",
+          "index": 4
+        }
+      },
+      {
+        "label": "Tell us about you!",
+        "data": {
+          "src": "/video/n_cyber/cyber_mssr-1.m4v",
+          "audio": "/video/cyber/audio/C08.mp3",
+          "interactive": "pills",
+          "index": 5,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 1
+            }
+          }
+        }
+      },
+      {
+        "label": "CYDEC for BDM",
+        "data": {
+          "src": "/video/n_cyber/cyber_mssr-1.m4v",
+          "audio": "/video/cyber/audio/C09.mp3",
+          "interactive": null,
+          "index": 6,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 0
+            }
+          }
+        }
+      },
+      {
+        "label": "CYDEC for TDM",
+        "data": {
+          "src": "/video/n_cyber/cyber_mssr-1.m4v",
+          "audio": "/video/cyber/audio/C10.mp3",
+          "interactive": null,
+          "index": 7,
+          "tomi": {
+            "visible": true,
+            "position": {
+              "x": 0,
+              "y": 0.2,
+              "z": 0
+            }
+          }
+        }
+      },
+      {
+        "label": "Case Studies",
+        "data": {
+          "src": "/video/n_cyber/cyber_stage2-1.m4v",
+          "audio": "/video/cyber/audio/C11.mp3",
+          "interactive": null,
+          "index": 8
+        }
+      },
+      {
+        "label": "FEEDS Analyse",
+        "data": {
+          "src": "/video/cyber/mini/3.mp4",
+          "audio": "/video/cyber/audio/C12.mp3",
+          "interactive": null,
+          "index": 9
+        }
+      },
+      {
+        "label": "Findings & Actions",
+        "data": {
+          "src": "/video/cyber/mini/3.mp4",
+          "audio": "/video/cyber/audio/C13.mp3",
+          "interactive": null,
+          "index": 10
+        }
+      },
+      {
+        "label": "Persistent Threats",
+        "data": {
+          "src": "/video/cyber/mini/4.mp4",
+          "audio": "/video/cyber/audio/c14.mp3",
+          "interactive": null,
+          "index": 11
+        }
+      },
+      {
+        "label": "Persistent Threats Secured ",
+        "data": {
+          "src": "/video/cyber/mini/5.mp4",
+          "audio": "/video/cyber/audio/c15a.mp3",
+          "interactive": null,
+          "index": 12
+        }
+      },
+      {
+        "label": "Conclusion",
+        "data": {
+          "src": "/video/n_cyber/cyber_thankyou-1.m4v",
+          "audio": "/video/cyber/audio/C16.mp3",
+          "interactive": null,
+          "index": 13
+        }
+      }
+    ]
+  }
+}

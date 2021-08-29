@@ -1,0 +1,126 @@
+<html>
+  <head>
+
+    <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <style>@-ms-viewport { width: device-width; }</style>
+
+    <!-- <link rel="stylesheet" href="//www.marzipano.net/demos/common/reset.css"> -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- scrollable obj -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w==" crossorigin="anonymous" /> -->
+    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w==" crossorigin="anonymous" />
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script> -->
+    <script src="js/scrollable/dragscroll.js"></script>
+    <script src="js/marzipano.js"></script>
+
+  </head> 
+  <body>
+    <img class="tmlogo" src="assets/imgs/tmLogo.png" onclick="window.location.href='https://tmonexr.com/'";/>
+   
+    <div id="pano"></div>
+
+    <audio src="" id="mainAudio" onclick="togglePlay();"></audio>
+
+    <div id="sidebar">
+      <div class="toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar(this)">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>  
+      <div class="list">
+        <div onclick="security();" class="item">01 - DATA CENTRE GUARDHOUSE 	&nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="greet_meet ();" class="item">02 - MAIN LOBBY &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="mantrap();" class="item">03 - MANTRAP &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="battery();" class="item">04 - UPS BATTERY ROOM &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="tonne();" class="item">05 - DATA CENRE CARGO LIFT &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="buffertank();" class="item">06 - COOLING PLANT BLOCK &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="gensets();" class="item">07 - EMERGENCY POWER <br>&emsp;&emsp;GENERATORS <i class='fas fa-volume-up'></i></div>
+        <div onclick="execbriefing();" class="item">08 - EXECUTIVE BRIEFING <br>&emsp;&emsp;CENTRE &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="commandcenter();" class="item">09 - DC COMMAND CENTRE &nbsp; <i class='fas fa-volume-up'></i></div>
+        <div onclick="loadingbay();" class="item">10 - LOADING BAY &nbsp; <i class='fas fa-volume-up'></i></div>
+      </div>
+    </div>
+
+  <div class="sidePanelBtns">
+    <img class="sidebtn" src="assets/imgs/sidepanel/home.png" onclick="window.location.href='https://tmonexr.com/lobbyscene.html'";/>
+    <img class="sidebtn" src="assets/imgs/sidepanel/back.png"  onclick="window.location.href='scene1.html';"/>
+    <img id="audioBtn" class="sidebtn" src="assets/imgs/sidepanel/audion_on.png" onclick="togglePlay();"/>
+    <img class="sidebtn" src="assets/imgs/sidepanel/fullscreen.png" onclick="openFullscreen();"/>
+  </div>
+
+  <div class="map" id="map">
+    <div class="free dragscroll">
+      <!-- <img id="floorplan1" src="assets/imgs/floorplan/FloorPlan1.png" />
+      <img id="pin-1" class="box" src="assets/imgs/pin/icon-1.png" onclick="greet_meet();"/>
+      <img id="pin-2" class="box" src="assets/imgs/pin/icon-2.png" onclick="mantrap ();"/>
+      <img id="pin-3" class="box" src="assets/imgs/pin/icon-3.png" onclick="battery();"/>
+      <img id="pin-4" class="box" src="assets/imgs/pin/icon-4.png" onclick="tonne();"/>
+      <img id="pin-5" class="box" src="assets/imgs/pin/icon-5.png" onclick="buffertank();"/>
+      <img id="pin-6" class="box" src="assets/imgs/pin/icon-6.png" onclick="gensets();"/>
+      <img id="pin-7" class="box" src="assets/imgs/pin/icon-7.png" onclick="execbriefing();"/>
+      <img id="pin-8" class="box" src="assets/imgs/pin/icon-8.png" onclick="commandcenter();"/>
+      <img id="pin-9" class="box" src="assets/imgs/pin/icon-9.png" onclick="loadingbay();"/>
+      <img id="pin-10" class="box" src="assets/imgs/pin/icon-10.png" onclick="security();"/> -->
+      <img id="floorplan1" src="assets/imgs/floorplan/FloorPlan1.png" />
+      <img id="pin-1" class="box" src="assets/imgs/pin/icon-1.png" onclick="security();"/>
+      <img id="pin-2" class="box" src="assets/imgs/pin/icon-2.png" onclick="greet_meet ();"/>
+      <img id="pin-3" class="box" src="assets/imgs/pin/icon-3.png" onclick="mantrap();"/>
+      <img id="pin-4" class="box" src="assets/imgs/pin/icon-4.png" onclick="battery();"/>
+      <img id="pin-5" class="box" src="assets/imgs/pin/icon-5.png" onclick="tonne();"/>
+      <img id="pin-6" class="box" src="assets/imgs/pin/icon-6.png" onclick="buffertank();"/>
+      <img id="pin-7" class="box" src="assets/imgs/pin/icon-7.png" onclick="gensets();"/>
+      <img id="pin-8" class="box" src="assets/imgs/pin/icon-8.png" onclick="execbriefing();"/>
+      <img id="pin-9" class="box" src="assets/imgs/pin/icon-9.png" onclick="commandcenter();"/>
+      <img id="pin-10" class="box" src="assets/imgs/pin/icon-10.png" onclick="loadingbay();"/>
+     </div>
+  </div>
+
+
+
+  <div class="floorButtons">
+    <img class="btn" id="floor_btn1" onclick="window.location.href='scene1.html';" src="assets/imgs/floorplan/gf_btn.png">
+    <img class="btn" id="floor_btn2" onclick="window.location.href='scene2.html';" src="assets/imgs/floorplan/l1_Btn.png">
+    <img class="btn" id="floor_btn3" onclick="window.location.href='scene3.html';" src="assets/imgs/floorplan/l2_btn.png">
+  </div>
+
+
+<!-- ------------ -->
+     <div id="blackBG" style="display: none; position: fixed; top: 0; opacity: 0.8; z-index: 8; width: 100%; height: 100%; background-size: contain; object-fit: cover; background-color: black;"> </div>
+    
+     <div class="previewFrame" id="previewFrame" style="display: none;">
+      <iframe class="previewfr" id="previewfr" src="assets/iframes/floor1/01/index.html" ></iframe>
+      <h1 class="previewtitle"> PREVIEW</h1>
+      <img class="previewClose" id="previewClose" src="assets/imgs/sidepanel/close.png" />
+
+      <div class="previewDescription">
+        <img class="previewDescriptionBox" id="previewDescriptionBox" src="assets/iframes/Frame_description.png" />
+        <p class="descriptionText" id="descriptionText">
+         
+        </p>
+      </div>
+
+      <div class="previewLaunchDiv">
+        <h2 class="previewSubtitle"> Want to see more? Jump in!</h2>
+        <img class="previewLaunchBtn" id="previewLaunchBtn" src="assets/imgs/launchBtn.png" />
+      </div>
+
+    </div>
+
+    <div class="previewTitleHolder" id="previewTitleHolder" style="display: none;">
+      <h2 class="previewMainTitle" id="previewMainTitle"> Title</h2>
+      <!-- <img class="previewTitleBG" id="previewLaunchBtn" src="assets/iframes/cm_text_bg.png" /> -->
+    </div>
+
+
+
+
+    <iframe class="launchfr" id="launchfr" style="display: none;" src="./assets/iframes/floor1/01/index.html" ></iframe>
+<!-- ------------ -->
+    
+    <script src="js/scene1.js"></script>
+    <script src="js/index.js"></script>
+
+  </body>
+</html>
